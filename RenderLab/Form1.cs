@@ -7,7 +7,6 @@ using Engine2D.Rendering.Stages;
 using Engine2D.Tiles;
 using RenderLab.Targets.WinForms;
 using System.Diagnostics;
-using System.Drawing.Imaging;
 using System.Numerics;
 
 namespace RenderLab
@@ -57,7 +56,7 @@ namespace RenderLab
                 new Line2D(new Vector2(0, -100), new Vector2(0, 100)),
                 new Line2D(new Vector2(-150, -150), new Vector2(150, 150)),
             };
-            
+
             // -----------------------
             // Viewport (target)
             // -----------------------
@@ -66,32 +65,23 @@ namespace RenderLab
             // -----------------------
             // Tile system (engine)
             // -----------------------
-            var tileZoomSelector = new TileZoomSelector();
-            var tileSource = new DebugTileSource();
-
-            var gridProvider = new GridTileProvider(
-                tileSource,
-                tileZoomSelector,
-                camera);
-
+            var zoomSelector = new TileZoomSelector();
             var imageScaler = new WinFormsTileImageScaler();
-
-            var scaledProvider = new TileScaler(
-                gridProvider,
-                camera,
-                imageScaler);
-
             var coverageProvider = new TileCoverageProvider(camera);
+
+            var debug = new DebugTileSource();
+            var rawCache = new TileSourceMemoryCache(debug, 100);
+            var grid = new GridTileProvider(rawCache, zoomSelector, camera);
+            var scaler = new TileScaler(grid, camera, imageScaler);
+            var scaledCache = new TileProviderMemoryCache(scaler, 100);
+
 
             // -----------------------
             // Render pipeline (engine)
             // -----------------------
             _pipeline = new RenderPipeline2D();
             _pipeline.AddStage(new ClearStage(ColorRgba.Black));
-            _pipeline.AddStage(
-                new TileRenderStage(
-                    scaledProvider,
-                    coverageProvider));
+            _pipeline.AddStage(new TileRenderStage(scaledCache, coverageProvider));
 
             _pipeline.AddStage(new PrimitiveRenderStage(() => _primitives));
             _pipeline.AddStage(new FpsCounterStage());
@@ -105,7 +95,7 @@ namespace RenderLab
         private void OnIdle(object? sender, EventArgs e)
         {
             // Let it run, so i can count fps
-            if(false)
+            if (false)
             {
                 var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
 

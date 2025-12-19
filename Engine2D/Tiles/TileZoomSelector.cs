@@ -7,5 +7,4 @@
             return (int)MathF.Floor(MathF.Log2(cameraZoom));
         }
     }
-
 }
