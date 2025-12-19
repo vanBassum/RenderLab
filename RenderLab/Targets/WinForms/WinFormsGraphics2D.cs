@@ -1,8 +1,6 @@
 using Engine2D.Rendering.Graphics;
-using Engine2D.Tiles.Images;
-using System.Drawing.Imaging;
+using Engine2D.Tiles;
 using System.Numerics;
-using System.Runtime.InteropServices;
 
 namespace RenderLab.Targets.WinForms
 {
@@ -43,63 +41,26 @@ namespace RenderLab.Targets.WinForms
             _graphics.FillRectangle(brush, position.X, position.Y, size.X, size.Y);
         }
 
+        private static Color ToColor(ColorRgba c)
+            => Color.FromArgb(c.A, c.R, c.G, c.B);
 
         public void DrawImage(ITileImage image, Vector2 topLeft, Vector2 size)
         {
-            switch (image)
-            {
-                // Fast path: cached bitmap
-                case WinFormsTileImage wf:
-                    _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y, size.X, size.Y);
-                    break;
+            if (image is not WinFormsTileImage wf)
+                throw new NotSupportedException(
+                    $"Tile image type {image.GetType().Name} not supported.");
 
-                // Slow path: procedural RGBA buffer
-                case ProceduralTileImage proc:
-                    DrawProceduralImage(proc, topLeft, size);
-                    break;
-                default:
-                    throw new NotSupportedException("Unsupported tile image type.");
-            }
+            _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y, size.X, size.Y);
         }
 
-        private void DrawProceduralImage(ProceduralTileImage image, Vector2 topLeft, Vector2 size)
+        public void DrawRect(Vector2 screenPos, Vector2 screenSize, ColorRgba red)
         {
-            using var bitmap = new Bitmap(image.Width, image.Height, PixelFormat.Format32bppArgb);
-
-            var rect = new Rectangle(0, 0, image.Width, image.Height);
-            var data = bitmap.LockBits(rect, ImageLockMode.WriteOnly, bitmap.PixelFormat);
-
-            try
-            {
-                // Convert RGBA -> BGRA
-                var bgra = new byte[image.Width * image.Height * 4];
-                var src = image.PixelData;
-
-                int srcIndex = 0;
-                int dstIndex = 0;
-
-                for (int i = 0; i < image.Width * image.Height; i++)
-                {
-                    bgra[dstIndex + 0] = src[srcIndex + 2]; // B
-                    bgra[dstIndex + 1] = src[srcIndex + 1]; // G
-                    bgra[dstIndex + 2] = src[srcIndex + 0]; // R
-                    bgra[dstIndex + 3] = src[srcIndex + 3]; // A
-
-                    srcIndex += 4;
-                    dstIndex += 4;
-                }
-
-                Marshal.Copy(bgra, 0, data.Scan0, bgra.Length);
-            }
-            finally
-            {
-                bitmap.UnlockBits(data);
-            }
-
-            _graphics.DrawImage(bitmap, topLeft.X, topLeft.Y, size.X, size.Y);
+            _graphics.DrawRectangle(
+                new Pen(ToColor(red)),
+                screenPos.X,
+                screenPos.Y,
+                screenSize.X,
+                screenSize.Y);
         }
-
-        private static Color ToColor(ColorRgba c)
-            => Color.FromArgb(c.A, c.R, c.G, c.B);
     }
 }
