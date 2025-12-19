@@ -7,24 +7,22 @@ namespace Engine2D.Tiles
     public sealed class TileRenderStage : IRenderer2D
     {
         private readonly ITileProvider _provider;
+        private readonly TileCoverageProvider _coverage;
 
-        public TileRenderStage(ITileProvider provider)
+        public TileRenderStage(
+            ITileProvider provider,
+            TileCoverageProvider coverage)
         {
             _provider = provider;
+            _coverage = coverage;
         }
 
         public void Render(in RenderContext2D context)
         {
-            var camera = context.Camera;
-
-            // Viewport size comes from camera
-            var viewport = camera.ViewportSize;
-
-            var halfW = viewport.X * 0.5f / camera.Zoom;
-            var halfH = viewport.Y * 0.5f / camera.Zoom;
-
-            var worldMin = camera.Position - new Vector2(halfW, halfH);
-            var worldMax = camera.Position + new Vector2(halfW, halfH);
+            _coverage.GetWorldCoverage(
+                context.Camera.ViewportSize,
+                out var worldMin,
+                out var worldMax);
 
             foreach (var tile in _provider.GetTiles(worldMin, worldMax))
             {
@@ -32,7 +30,9 @@ namespace Engine2D.Tiles
             }
         }
 
-        private static void RenderTile(TileRenderItem tile, in RenderContext2D context)
+        private static void RenderTile(
+            TileRenderItem tile,
+            in RenderContext2D context)
         {
             var camera = context.Camera;
 

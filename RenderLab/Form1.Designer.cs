@@ -34,10 +34,11 @@
             // 
             // pictureBox1
             // 
+            pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pictureBox1.BorderStyle = BorderStyle.FixedSingle;
-            pictureBox1.Location = new Point(38, 33);
+            pictureBox1.Location = new Point(12, 12);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(397, 316);
+            pictureBox1.Size = new Size(776, 426);
             pictureBox1.TabIndex = 0;
             pictureBox1.TabStop = false;
             // 

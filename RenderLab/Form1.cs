@@ -57,26 +57,28 @@ namespace RenderLab
                 new Line2D(new Vector2(0, -100), new Vector2(0, 100)),
                 new Line2D(new Vector2(-150, -150), new Vector2(150, 150)),
             };
-
+            
             // -----------------------
             // Viewport (target)
             // -----------------------
             _viewport = new PictureBoxViewport(pictureBox1, camera);
 
-
-            var bmp = new Bitmap(256, 256, PixelFormat.Format32bppArgb);
-
-            using (var g = Graphics.FromImage(bmp))
-            {
-                g.Clear(Color.DarkSlateGray);
-                g.FillRectangle(Brushes.DimGray, 0, 0, 128, 128);
-                g.FillRectangle(Brushes.Gray, 128, 128, 128, 128);
-            }
-
-            var tileImage = new WinFormsTileImage(bmp);
-
+            // -----------------------
+            // Tile system (engine)
+            // -----------------------
             var tileZoomSelector = new TileZoomSelector();
-            int tileZoom = tileZoomSelector.SelectTileZoom(camera.Zoom);
+            var tileSource = new DebugTileSource();
+
+            var gridProvider = new GridTileProvider(
+                tileSource,
+                tileZoomSelector,
+                camera);
+
+            var scaledProvider = new TileScaler(
+                gridProvider,
+                camera);
+
+            var coverageProvider = new TileCoverageProvider(camera);
 
             // -----------------------
             // Render pipeline (engine)
@@ -85,7 +87,8 @@ namespace RenderLab
             _pipeline.AddStage(new ClearStage(ColorRgba.Black));
             _pipeline.AddStage(
                 new TileRenderStage(
-                    new DebugGridTileProvider(tileZoom)));
+                    scaledProvider,
+                    coverageProvider));
 
             _pipeline.AddStage(new PrimitiveRenderStage(() => _primitives));
             _pipeline.AddStage(new FpsCounterStage());
@@ -99,12 +102,17 @@ namespace RenderLab
         private void OnIdle(object? sender, EventArgs e)
         {
             // Let it run, so i can count fps
-            //var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
-            //
-            //if (elapsedMs < TargetFrameTimeMs)
-            //    return;
-            //
-            //_frameTimer.Restart();
+            if(false)
+            {
+                var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
+
+                if (elapsedMs < TargetFrameTimeMs)
+                    return;
+
+                _frameTimer.Restart();
+
+            }
+
             RenderFrame();
         }
 
