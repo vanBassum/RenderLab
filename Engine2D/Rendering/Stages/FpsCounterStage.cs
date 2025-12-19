@@ -10,17 +10,20 @@ namespace Engine2D.Rendering.Stages
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         private int _frameCount;
         private double _fps;
-
         private long _lastTimestamp;
 
         public void Render(in RenderContext2D context)
         {
             Measure();
 
-            context.Graphics.DrawText(
-                new Vector2(10, 10),
-                $"FPS: {_fps:F1}",
-                ColorRgba.Lime);
+            var text = $"FPS: {_fps:F1}";
+
+            // Background box
+            var position = new Vector2(6, 6);
+            var size = new Vector2(90, 24);
+
+            context.Graphics.FillRect(position, size, new ColorRgba(0, 0, 0, 160));
+            context.Graphics.DrawText(position + new Vector2(6, 4), text, ColorRgba.Lime);
         }
 
         private void Measure()

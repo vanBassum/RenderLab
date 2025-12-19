@@ -4,6 +4,9 @@ using Engine2D.Rendering.Camera;
 using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
 using Engine2D.Rendering.Stages;
+using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Images;
+using Engine2D.Tiles.Stages;
 using RenderLab.Targets.WinForms;
 using System.Diagnostics;
 using System.Numerics;
@@ -66,6 +69,7 @@ namespace RenderLab
             // -----------------------
             _pipeline = new RenderPipeline2D();
             _pipeline.AddStage(new ClearStage(ColorRgba.Black));
+            _pipeline.AddStage(new TileRenderStage(new CheckerTileProvider()));
             _pipeline.AddStage(new PrimitiveRenderStage(() => _primitives));
             _pipeline.AddStage(new FpsCounterStage());
 
@@ -105,4 +109,60 @@ namespace RenderLab
             }
         }
     }
+
+
+    public sealed class ProceduralTileImage : ITileImage
+    {
+        public int Width { get; }
+        public int Height { get; }
+
+        // RGBA8, tightly packed
+        // Index = (y * Width + x) * 4
+        public byte[] PixelData { get; }
+
+        public ProceduralTileImage(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            PixelData = new byte[width * height * 4];
+        }
+    }
+
+
+    public sealed class CheckerTileProvider : ITileProvider
+    {
+        private readonly int _tileSize;
+        private readonly int _checkerSize;
+
+        public CheckerTileProvider(int tileSize = 256, int checkerSize = 32)
+        {
+            _tileSize = tileSize;
+            _checkerSize = checkerSize;
+        }
+
+        public bool TryGetTile(TileId id, out ITileImage image)
+        {
+            var tile = new ProceduralTileImage(_tileSize, _tileSize);
+
+            for (int y = 0; y < _tileSize; y++)
+                for (int x = 0; x < _tileSize; x++)
+                {
+                    int cx = x / _checkerSize;
+                    int cy = y / _checkerSize;
+                    bool even = ((cx + cy) & 1) == 0;
+
+                    byte c = even ? (byte)220 : (byte)180;
+
+                    int i = (y * _tileSize + x) * 4;
+                    tile.PixelData[i + 0] = c;   // R
+                    tile.PixelData[i + 1] = c;   // G
+                    tile.PixelData[i + 2] = c;   // B
+                    tile.PixelData[i + 3] = 255; // A
+                }
+
+            image = tile;
+            return true;
+        }
+    }
+
 }
