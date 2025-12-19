@@ -72,4 +72,42 @@ namespace RenderLab.Targets.WinForms
         Vector2 GetClientSize()
             => new Vector2(_pictureBox.ClientSize.Width, _pictureBox.ClientSize.Height);
     }
+
+    public sealed class RenderViewport : Control
+    {
+        private readonly RenderPipeline2D _pipeline;
+
+        public Camera2D Camera { get; }
+
+        public RenderViewport(Camera2D camera, RenderPipeline2D pipeline)
+        {
+            Camera = camera;
+            _pipeline = pipeline;
+
+            SetStyle(
+                ControlStyles.UserPaint |
+                ControlStyles.AllPaintingInWmPaint |
+                ControlStyles.OptimizedDoubleBuffer,
+                true);
+
+            ResizeRedraw = true;
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+
+            if (ClientSize.Width <= 0 || ClientSize.Height <= 0)
+                return;
+
+            Camera.ViewportSize = new Vector2(
+                ClientSize.Width,
+                ClientSize.Height);
+
+            var backend = new WinFormsGraphics2D(e.Graphics);
+            var context = new RenderContext2D(Camera, backend);
+
+            _pipeline.Render(context);
+        }
+    }
 }

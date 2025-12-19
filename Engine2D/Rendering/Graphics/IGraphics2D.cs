@@ -1,4 +1,4 @@
-using Engine2D.Tiles;
+using Engine2D.Tiles.Abstractions;
 using System.Numerics;
 
 namespace Engine2D.Rendering.Graphics

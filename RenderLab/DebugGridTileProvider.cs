@@ -1,4 +1,4 @@
-using Engine2D.Tiles;
+using Engine2D.Tiles.Abstractions;
 using RenderLab.Targets.WinForms;
 using System.Drawing.Imaging;
 using System.Numerics;
@@ -7,9 +7,6 @@ namespace RenderLab
 {
     public sealed class DebugTileSource : ITileSource
     {
-        private readonly Dictionary<(int x, int y, int z), WinFormsTileImage> _cache
-            = new();
-
         private readonly int _pixelSize;
 
         public DebugTileSource(int pixelSize = 256)
@@ -19,13 +16,7 @@ namespace RenderLab
 
         public ITileImage GetTile(int x, int y, int z)
         {
-            var key = (x, y, z);
-
-            if (_cache.TryGetValue(key, out var cached))
-                return cached;
-
             var created = CreateTile(x, y, z);
-            _cache[key] = created;
             return created;
         }
 
@@ -67,3 +58,4 @@ namespace RenderLab
         }
     }
 }
+

@@ -1,4 +1,4 @@
-﻿namespace Engine2D.Tiles
+﻿namespace Engine2D.Tiles.Scaling
 {
     public sealed class TileZoomSelector
     {

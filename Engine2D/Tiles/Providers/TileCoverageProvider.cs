@@ -1,7 +1,7 @@
 ﻿using Engine2D.Rendering.Camera;
 using System.Numerics;
 
-namespace Engine2D.Tiles
+namespace Engine2D.Tiles.Providers
 {
     public sealed class TileCoverageProvider
     {

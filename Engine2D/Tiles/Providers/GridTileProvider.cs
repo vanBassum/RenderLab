@@ -1,7 +1,10 @@
 ﻿using Engine2D.Rendering.Camera;
+using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Rendering;
+using Engine2D.Tiles.Scaling;
 using System.Numerics;
 
-namespace Engine2D.Tiles
+namespace Engine2D.Tiles.Providers
 {
     public sealed class GridTileProvider : ITileProvider
     {
@@ -41,6 +44,9 @@ namespace Engine2D.Tiles
                 for (int x = minX; x <= maxX; x++)
                 {
                     var image = _source.GetTile(x, y, z);
+
+                    if (image == null)
+                        continue;
 
                     yield return new TileRenderItem(
                         image,

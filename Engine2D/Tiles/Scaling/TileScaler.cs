@@ -1,7 +1,9 @@
 ﻿using Engine2D.Rendering.Camera;
+using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Rendering;
 using System.Numerics;
 
-namespace Engine2D.Tiles
+namespace Engine2D.Tiles.Scaling
 {
     public sealed class TileScaler : ITileProvider
     {

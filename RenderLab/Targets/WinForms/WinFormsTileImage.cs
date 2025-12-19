@@ -1,4 +1,4 @@
-using Engine2D.Tiles;
+using Engine2D.Tiles.Abstractions;
 
 namespace RenderLab.Targets.WinForms
 {

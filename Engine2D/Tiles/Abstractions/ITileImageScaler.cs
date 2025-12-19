@@ -1,4 +1,4 @@
-﻿namespace Engine2D.Tiles
+﻿namespace Engine2D.Tiles.Abstractions
 {
     public interface ITileImageScaler
     {

@@ -1,23 +1,26 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
-namespace Engine2D.Tiles
+namespace Engine2D.Tiles.Caching
 {
     public sealed class MemoryLruCache<TKey, TValue>
         where TKey : notnull
     {
         private readonly int _maxEntries;
+        private readonly Action<TKey, TValue>? _onEvict;
 
         private readonly Dictionary<TKey, LinkedListNode<Entry>> _map = new();
         private readonly LinkedList<Entry> _lru = new();
 
         private sealed record Entry(TKey Key, TValue Value);
 
-        public MemoryLruCache(int maxEntries)
+        public MemoryLruCache(int maxEntries, Action<TKey, TValue>? onEvict = null)
         {
             if (maxEntries <= 0)
                 throw new ArgumentOutOfRangeException(nameof(maxEntries));
 
             _maxEntries = maxEntries;
+            _onEvict = onEvict;
         }
 
         public bool TryGet(TKey key, out TValue value)
@@ -62,6 +65,8 @@ namespace Engine2D.Tiles
             var node = _lru.Last!;
             _lru.RemoveLast();
             _map.Remove(node.Value.Key);
+
+            _onEvict?.Invoke(node.Value.Key, node.Value.Value);
         }
     }
 }

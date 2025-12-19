@@ -5,6 +5,10 @@ using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
 using Engine2D.Rendering.Stages;
 using Engine2D.Tiles;
+using Engine2D.Tiles.Caching;
+using Engine2D.Tiles.Providers;
+using Engine2D.Tiles.Rendering;
+using Engine2D.Tiles.Scaling;
 using RenderLab.Targets.WinForms;
 using System.Diagnostics;
 using System.Numerics;
@@ -24,6 +28,8 @@ namespace RenderLab
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
         private const double TargetFrameTimeMs = 1000.0 / 60.0;
 
+        private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
+
         public Form1()
         {
             InitializeComponent();
@@ -37,7 +43,7 @@ namespace RenderLab
             var camera = new Camera2D
             {
                 Position = Vector2.Zero,
-                Zoom = 1f
+                Zoom = 2.5f
             };
 
             // -----------------------
@@ -69,8 +75,12 @@ namespace RenderLab
             var imageScaler = new WinFormsTileImageScaler();
             var coverageProvider = new TileCoverageProvider(camera);
 
-            var debug = new DebugTileSource();
-            var rawCache = new TileSourceMemoryCache(debug, 100);
+            //var debug = new DebugTileSource();
+            var httpTileSource = new HttpTileSource(TileUrlTemplate);
+            var diskCache = new TileSourceDiskCache(httpTileSource, "TileCache");
+
+            
+            var rawCache = new TileSourceMemoryCache(diskCache, 100);
             var grid = new GridTileProvider(rawCache, zoomSelector, camera);
             var scaler = new TileScaler(grid, camera, imageScaler);
             var scaledCache = new TileProviderMemoryCache(scaler, 100);

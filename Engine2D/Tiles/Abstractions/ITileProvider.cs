@@ -1,6 +1,7 @@
-﻿using System.Numerics;
+﻿using Engine2D.Tiles.Rendering;
+using System.Numerics;
 
-namespace Engine2D.Tiles
+namespace Engine2D.Tiles.Abstractions
 {
     // =========================
     // Tile Providers (World)

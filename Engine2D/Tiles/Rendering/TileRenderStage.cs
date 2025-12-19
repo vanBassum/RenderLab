@@ -1,7 +1,9 @@
 ﻿using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
+using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Providers;
 
-namespace Engine2D.Tiles
+namespace Engine2D.Tiles.Rendering
 {
     public sealed class TileRenderStage : IRenderer2D
     {
