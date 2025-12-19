@@ -5,6 +5,5 @@
         ITileImage GetTile(int x, int y, int zoom);
     }
 
-    //TileRenderItem has too much stuff
 
 }

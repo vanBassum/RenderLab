@@ -44,13 +44,13 @@ namespace RenderLab.Targets.WinForms
         private static Color ToColor(ColorRgba c)
             => Color.FromArgb(c.A, c.R, c.G, c.B);
 
-        public void DrawImage(ITileImage image, Vector2 topLeft, Vector2 size)
+        public void DrawImage(ITileImage image, Vector2 topLeft)
         {
             if (image is not WinFormsTileImage wf)
                 throw new NotSupportedException(
                     $"Tile image type {image.GetType().Name} not supported.");
 
-            _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y, size.X, size.Y);
+            _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y);
         }
 
         public void DrawRect(Vector2 screenPos, Vector2 screenSize, ColorRgba red)

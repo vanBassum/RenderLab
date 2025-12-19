@@ -74,9 +74,12 @@ namespace RenderLab
                 tileZoomSelector,
                 camera);
 
+            var imageScaler = new WinFormsTileImageScaler();
+
             var scaledProvider = new TileScaler(
                 gridProvider,
-                camera);
+                camera,
+                imageScaler);
 
             var coverageProvider = new TileCoverageProvider(camera);
 

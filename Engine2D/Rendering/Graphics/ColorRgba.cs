@@ -20,5 +20,7 @@ namespace Engine2D.Rendering.Graphics
         public static readonly ColorRgba White = new(255, 255, 255);
         public static readonly ColorRgba Green = new(0, 255, 0);
         public static readonly ColorRgba Red = new(255, 0, 0);
+        public static readonly ColorRgba Blue = new(0, 0, 255);
+        public static readonly ColorRgba Pink = new(255, 192, 203);
     }
 }

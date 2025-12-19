@@ -12,10 +12,7 @@ namespace Engine2D.Tiles
             _camera = camera;
         }
 
-        public void GetWorldCoverage(
-            Vector2 viewportSize,
-            out Vector2 worldMin,
-            out Vector2 worldMax)
+        public void GetWorldCoverage(Vector2 viewportSize, out Vector2 worldMin, out Vector2 worldMax)
         {
             Vector2 halfViewportWorld =
                 viewportSize / _camera.Zoom * 0.5f;

@@ -1,6 +1,6 @@
 using Engine2D.Tiles;
 
-namespace RenderLab
+namespace RenderLab.Targets.WinForms
 {
     public sealed class WinFormsTileImage : ITileImage
     {
@@ -11,10 +11,6 @@ namespace RenderLab
             Bitmap = bitmap;
         }
     }
-
-
-
-
 
 }
 
