@@ -12,6 +12,11 @@ namespace RenderLab.Targets.WinForms
         {
             Bitmap = bitmap;
         }
+
+        public void Dispose()
+        {
+            Bitmap.Dispose();
+        }
     }
 
 }

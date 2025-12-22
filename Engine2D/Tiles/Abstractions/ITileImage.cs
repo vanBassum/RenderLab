@@ -1,13 +1,12 @@
-﻿namespace Engine2D.Tiles.Abstractions
-{
-    // =========================
-    // Tile Images
-    // =========================
+﻿using System.Security.Cryptography.X509Certificates;
 
-    public interface ITileImage
+namespace Engine2D.Tiles.Abstractions
+{
+
+    public interface ITileImage : IDisposable
     {
         int Width { get; }
         int Height { get; }
-    }
 
+    }
 }

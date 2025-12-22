@@ -72,7 +72,7 @@ namespace RenderLab
             // Tile system (engine)
             // -----------------------
             var zoomSelector = new TileZoomSelector();
-            var imageScaler = new WinFormsTileImageScaler();
+            //var imageScaler = new WinFormsTileImageScaler();
             var coverageProvider = new TileCoverageProvider(camera);
 
             //var debug = new DebugTileSource();
@@ -81,9 +81,8 @@ namespace RenderLab
 
             
             var rawCache = new TileSourceMemoryCache(diskCache, 100);
-            var grid = new GridTileProvider(rawCache, zoomSelector, camera);
-            var scaler = new TileScaler(grid, camera, imageScaler);
-            var scaledCache = new TileProviderMemoryCache(scaler, 100);
+            //var scaler = new TileScaler(grid, camera, imageScaler);
+            //var scaledCache = new TileProviderMemoryCache(scaler, 100);
 
 
             // -----------------------
@@ -91,7 +90,7 @@ namespace RenderLab
             // -----------------------
             _pipeline = new RenderPipeline2D();
             _pipeline.AddStage(new ClearStage(ColorRgba.Black));
-            _pipeline.AddStage(new TileRenderStage(scaledCache, coverageProvider));
+            _pipeline.AddStage(new TileRenderStage(rawCache, coverageProvider));
 
             _pipeline.AddStage(new PrimitiveRenderStage(() => _primitives));
             _pipeline.AddStage(new FpsCounterStage());

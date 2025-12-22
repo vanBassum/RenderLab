@@ -12,25 +12,22 @@ namespace Engine2D.Tiles.Caching
         {
             _source = source;
             _cache = new MemoryLruCache<TileKey, ITileImage>(maxEntries, (k, v) => { 
+                v.Dispose();
                 //Debug.WriteLine($"TileSourceMemoryCache: Evicting tile {k.X},{k.Y},{k.Z} from cache");
             });
         }
 
-        public ITileImage? GetTile(int x, int y, int zoom)
+        public ITileImage? GetTile(TileKey tileKey)
         {
-            var key = new TileKey(x, y, zoom);
-
-            if (_cache.TryGet(key, out var image))
+            if (_cache.TryGet(tileKey, out var image))
                 return image;
 
-            //Debug.WriteLine($"TileSourceMemoryCache: Cache miss for tile {x},{y},{zoom}");
-            image = _source.GetTile(x, y, zoom);
+            image = _source.GetTile(tileKey);
 
             if (image != null)
-                _cache.Add(key, image);
+                _cache.Add(tileKey, image);
 
             return image;
         }
-        public readonly record struct TileKey(int X, int Y, int Z);
     }
 }

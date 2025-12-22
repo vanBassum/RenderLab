@@ -21,9 +21,9 @@ namespace RenderLab
             _httpClient = httpClient ?? new HttpClient();
         }
 
-        public ITileImage? GetTile(int x, int y, int z)
+        public ITileImage? GetTile(TileKey tileKey)
         {
-            var url = BuildUrl(x, y, z);
+            var url = BuildUrl(tileKey.X, tileKey.Y, tileKey.Z);
 
             // Do not retry known failures
             if (_failedUrls.ContainsKey(url))

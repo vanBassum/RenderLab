@@ -2,8 +2,9 @@
 {
     public interface ITileSource
     {
-        ITileImage? GetTile(int x, int y, int zoom);
+        ITileImage? GetTile(TileKey tileKey);
     }
+
 
 
 }

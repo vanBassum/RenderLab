@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace Engine2D.Tiles.Scaling
 {
-    public sealed class TileScaler : ITileProvider
+   /* public sealed class TileScaler : ITileProvider
     {
         private readonly ITileProvider _source;
         private readonly Camera2D _camera;
@@ -55,5 +55,5 @@ namespace Engine2D.Tiles.Scaling
                 tile.TileZoom);
         }
 
-    }
+    }*/
 }

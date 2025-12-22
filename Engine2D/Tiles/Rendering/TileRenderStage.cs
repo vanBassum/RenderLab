@@ -2,44 +2,47 @@
 using Engine2D.Rendering.Pipeline;
 using Engine2D.Tiles.Abstractions;
 using Engine2D.Tiles.Providers;
+using Engine2D.Tiles.Scaling;
+using System;
 
 namespace Engine2D.Tiles.Rendering
 {
     public sealed class TileRenderStage : IRenderer2D
     {
-        private readonly ITileProvider _provider;
+        private readonly ITileSource _tileSource;
         private readonly TileCoverageProvider _coverage;
 
-        public TileRenderStage(ITileProvider provider, TileCoverageProvider coverage)
+        public TileRenderStage(ITileSource tileSource,  TileCoverageProvider coverage)
         {
-            _provider = provider;
+            _tileSource = tileSource;
             _coverage = coverage;
         }
 
         public void Render(in RenderContext2D context)
         {
             _coverage.GetWorldCoverage(context.Camera.ViewportSize, out var worldMin, out var worldMax);
+            ITileGridProvider _gridProvider = new TileGridProvider(context.Camera);
 
-            foreach (var tile in _provider.GetTiles(worldMin, worldMax))
+            foreach (var tile in _gridProvider.GetTiles(worldMin, worldMax))
             {
                 RenderTile(tile, context);
             }
         }
 
-        private static void RenderTile(TileRenderItem tile, in RenderContext2D context)
+        private void RenderTile(TileRenderItem tile, in RenderContext2D context)
         {
             var camera = context.Camera;
+            var tileImage = _tileSource.GetTile(tile.TileKey);
 
-            var screenPos = camera.WorldToScreen(tile.WorldPosition);
+            if (tileImage == null)
+                return;
 
-            // NO SIZE PASSED → no scaling in graphics
-            context.Graphics.DrawImage(tile.Image, screenPos);
-
-            // Optional debug outline
-            var screenSize = tile.WorldSize * camera.Zoom;
-            context.Graphics.DrawRect(screenPos, screenSize, ColorRgba.Pink);
+            // For now no scaling!
+            context.Graphics.DrawImage(tileImage, tile.ScreenPosition);
         }
-
     }
-
 }
+
+
+
+

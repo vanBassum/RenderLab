@@ -4,7 +4,7 @@ using System.Drawing.Imaging;
 
 namespace RenderLab.Targets.WinForms
 {
-    public sealed class WinFormsTileImageScaler : ITileImageScaler
+ /*   public sealed class WinFormsTileImageScaler : ITileImageScaler
     {
         public ITileImage Scale(ITileImage source, int targetPixelSize)
         {
@@ -41,7 +41,7 @@ namespace RenderLab.Targets.WinForms
 
             return new WinFormsTileImage(dst);
         }
-    }
+    }*/
 
 }
 

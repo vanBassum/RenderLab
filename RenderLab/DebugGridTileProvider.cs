@@ -5,7 +5,7 @@ using System.Numerics;
 
 namespace RenderLab
 {
-    public sealed class DebugTileSource : ITileSource
+   /* public sealed class DebugTileSource : ITileSource
     {
         private readonly int _pixelSize;
 
@@ -56,6 +56,6 @@ namespace RenderLab
 
             return new WinFormsTileImage(bmp);
         }
-    }
+    }*/
 }
 

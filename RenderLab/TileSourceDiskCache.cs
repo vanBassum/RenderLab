@@ -18,9 +18,11 @@ namespace RenderLab
             Directory.CreateDirectory(_rootDirectory);
         }
 
-        public ITileImage? GetTile(int x, int y, int z)
+
+        public ITileImage? GetTile(TileKey tileKey)
         {
-            var path = GetTilePath(x, y, z);
+
+            var path = GetTilePath(tileKey.X, tileKey.Y, tileKey.Z);
 
             if (File.Exists(path))
             {
@@ -30,9 +32,9 @@ namespace RenderLab
             }
 
             // Cache miss ? load from inner source
-            var tile = _inner.GetTile(x, y, z);
+            var tile = _inner.GetTile(tileKey);
 
-            if(tile != null)
+            if (tile != null)
                 SaveTile(tile, path);
 
             return tile;
@@ -59,6 +61,7 @@ namespace RenderLab
 
             wf.Bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
         }
+
     }
 }
 
