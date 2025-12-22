@@ -10,18 +10,18 @@ namespace Engine2D.Tiles.Rendering
     public sealed class TileRenderStage : IRenderer2D
     {
         private readonly ITileSource _tileSource;
-        private readonly TileCoverageProvider _coverage;
 
-        public TileRenderStage(ITileSource tileSource,  TileCoverageProvider coverage)
+        public TileRenderStage(ITileSource tileSource)
         {
             _tileSource = tileSource;
-            _coverage = coverage;
         }
 
         public void Render(in RenderContext2D context)
         {
-            _coverage.GetWorldCoverage(context.Camera.ViewportSize, out var worldMin, out var worldMax);
             ITileGridProvider _gridProvider = new TileGridProvider(context.Camera);
+            TileCoverageProvider coverage = new TileCoverageProvider(context.Camera);
+
+            coverage.GetWorldCoverage(context.Camera.ViewportSize, out var worldMin, out var worldMax);
 
             foreach (var tile in _gridProvider.GetTiles(worldMin, worldMax))
             {
