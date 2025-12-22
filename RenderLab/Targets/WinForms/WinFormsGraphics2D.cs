@@ -7,15 +7,20 @@ namespace RenderLab.Targets.WinForms
     // =========================
     // WinForms backend adapter
     // =========================
-    public sealed class WinFormsGraphics2D : IGraphics2D
+    public sealed class WinFormsGraphics2D : IGraphics2D, IDisposable
     {
         private readonly Graphics _graphics;
-        private readonly Font _font = new Font("Consolas", 10);
+        private readonly Font _font;
 
         public WinFormsGraphics2D(Graphics graphics)
         {
             _graphics = graphics;
-            //_graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            _font = new Font("Consolas", 10);
+        }
+
+        public void Dispose()
+        {
+            _font.Dispose();
         }
 
         public void Clear(ColorRgba color)
@@ -53,14 +58,16 @@ namespace RenderLab.Targets.WinForms
             _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y);
         }
 
-        public void DrawRect(Vector2 screenPos, Vector2 screenSize, ColorRgba red)
+        public void DrawRect(Vector2 screenPos, Vector2 screenSize, ColorRgba color)
         {
+            using var pen = new Pen(ToColor(color));
             _graphics.DrawRectangle(
-                new Pen(ToColor(red)),
+                pen,
                 screenPos.X,
                 screenPos.Y,
                 screenSize.X,
                 screenSize.Y);
         }
+
     }
 }
