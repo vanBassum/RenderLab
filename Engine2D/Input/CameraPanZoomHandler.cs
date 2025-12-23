@@ -4,20 +4,19 @@ namespace Engine2D.Input
 {
     public sealed class CameraPanZoomHandler : IInputHandler
     {
+        public int MinZoom { get; set; }
+        public int MaxZoom { get; set; }
+
         private readonly Camera2D _camera;
         private bool _dragging;
-
         private int _zoomStepIndex = 0;
 
-        private const int MinStep = -8;
-        private const int MaxStep = 12;
-
-        private int _zoomLevel = 0;
-
-        public CameraPanZoomHandler(Camera2D camera)
+        public CameraPanZoomHandler(Camera2D camera, int min = 1, int max = 32)
         {
             _camera = camera;
             _camera.Zoom = 1.0f;
+            MinZoom = min;
+            MaxZoom = max;
         }
 
         public void HandleInput(InputQueue input)
@@ -47,20 +46,31 @@ namespace Engine2D.Input
 
         private void StepZoom(int delta)
         {
-            _zoomStepIndex = Math.Clamp(
-                _zoomStepIndex + delta,
-                MinStep,
-                MaxStep);
+            int maxStep = CalculateStepFromZoom(MaxZoom);
+            int minStep = CalculateStepFromZoom(MinZoom);
 
+            _zoomStepIndex = Math.Clamp(_zoomStepIndex + delta, minStep, maxStep);
+            float newZoom = CalculateZoomFromStep(_zoomStepIndex);
+
+            _camera.Zoom = newZoom;
+        }
+
+        private int CalculateStepFromZoom(float zoom)
+        {
+            int baseLevel = (int)MathF.Floor(MathF.Log2(zoom));
+            float baseZoom = MathF.Pow(2, baseLevel);
+            bool halfStep = zoom >= baseZoom * 1.5f;
+            return baseLevel * 2 + (halfStep ? 1 : 0);
+        }
+
+        private float CalculateZoomFromStep(int step)
+        {
             int baseLevel = _zoomStepIndex / 2;
             bool halfStep = (_zoomStepIndex & 1) != 0;
 
             float baseZoom = MathF.Pow(2, baseLevel);
-
-            _camera.Zoom = halfStep
-                ? baseZoom + baseZoom * 0.5f
-                : baseZoom;
+            return halfStep ? baseZoom * 1.5f : baseZoom;
         }
-
     }
 }
+

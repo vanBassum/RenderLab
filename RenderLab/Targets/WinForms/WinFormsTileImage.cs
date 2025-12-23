@@ -18,7 +18,6 @@ namespace RenderLab.Targets.WinForms
             Bitmap.Dispose();
         }
     }
-
 }
 
 

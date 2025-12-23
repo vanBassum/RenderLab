@@ -24,6 +24,10 @@ namespace RenderLab
             _httpClient = httpClient ?? new HttpClient();
         }
 
+        // Return values:
+        // - null                      → tile is pending (still downloading)
+        // - WinFormsTileImage.Empty   → tile is known missing / invalid
+        // - ITileImage                → tile is available
         public ITileImage? GetTile(TileKey tileKey)
         {
             if (tileKey.Z < MinZ || tileKey.Z > MaxZ)
@@ -34,27 +38,31 @@ namespace RenderLab
 
             var url = BuildUrl(tileKey.X, tileKey.Y, tileKey.Z);
 
+            // Known permanent failure → empty
             if (_failedUrls.ContainsKey(url))
                 return null;
 
             // Start download if not already in progress
             var task = _inFlight.GetOrAdd(url, _ => DownloadAsync(url));
 
-            // If still downloading → return null
+            // Still downloading → pending
             if (!task.IsCompleted)
                 return null;
 
-            // Download finished
+            // Download finished → remove from in-flight
             _inFlight.TryRemove(url, out _);
 
+            // Failed or 404 → blacklist and return empty
             if (task.IsFaulted || task.Result == null)
             {
-                MarkFailed(url, task.Exception?.GetBaseException().Message ?? "Unknown error");
+                MarkFailed(url, task.Exception?.GetBaseException().Message ?? "404");
                 return null;
             }
 
+            // Success
             return task.Result;
         }
+
 
         private async Task<ITileImage?> DownloadAsync(string url)
         {

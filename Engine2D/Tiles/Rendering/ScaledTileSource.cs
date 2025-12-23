@@ -1,4 +1,6 @@
-﻿using Engine2D.Tiles.Abstractions;
+﻿using Engine2D.Input;
+using Engine2D.Rendering.Pipeline;
+using Engine2D.Tiles.Abstractions;
 using System.Numerics;
 
 namespace Engine2D.Tiles.Rendering

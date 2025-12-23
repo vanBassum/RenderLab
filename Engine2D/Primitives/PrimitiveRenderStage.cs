@@ -1,8 +1,7 @@
-using Engine2D.Primitives;
 using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
 
-namespace Engine2D.Rendering.Stages
+namespace Engine2D.Primitives
 {
     public sealed class PrimitiveRenderStage : IRenderer2D
     {

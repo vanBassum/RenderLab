@@ -1,14 +1,15 @@
 using Engine2D.Tiles.Abstractions;
 using RenderLab.Targets.WinForms;
+using System.Diagnostics;
 
-namespace RenderLab
+namespace Engine2D.Tiles.Caching
 {
-    public sealed class TileSourceDiskCache : ITileSource
+    public sealed class WinFormsTileSourceDiskCache : ITileSource
     {
         private readonly ITileSource _inner;
         private readonly string _rootDirectory;
 
-        public TileSourceDiskCache(
+        public WinFormsTileSourceDiskCache(
             ITileSource inner,
             string rootDirectory)
         {
@@ -33,9 +34,11 @@ namespace RenderLab
 
             // Cache miss ? load from inner source
             var tile = _inner.GetTile(tileKey);
-
             if (tile != null)
+            {
                 SaveTile(tile, path);
+                Debug.WriteLine($"Disk cache miss for tile {tileKey}. Saved to {path}");
+            }
 
             return tile;
         }

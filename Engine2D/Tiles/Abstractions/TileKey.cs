@@ -7,6 +7,11 @@
         public int Z { get; set; }
         public int PixelSize { get; set; }  // Assuming square tiles for simplicity
 
+        public override string ToString()
+        {
+            return $"{X}, {Y}, {Z} ({PixelSize})";
+        }
+
     }
 
 

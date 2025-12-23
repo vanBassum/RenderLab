@@ -1,6 +1,4 @@
-﻿using Engine2D.Tiles.Abstractions;
-
-namespace Engine2D.Tiles.Rendering
+﻿namespace Engine2D.Tiles.Abstractions
 {
     public interface ITileScaler
     {

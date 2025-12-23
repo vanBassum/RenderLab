@@ -14,16 +14,12 @@ namespace RenderLab
 {
     public partial class Form1 : Form
     {
-        private PictureBoxViewport _viewport = null!;
         private RenderPipeline2D _pipeline = null!;
         private List<IPrimitive2D> _primitives = null!;
 
-        private InputQueue _input = null!;
-        private CameraPanZoomHandler _cameraInput = null!;
-        private WinFormsInputSource _inputSource = null!;
-
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
         private const double TargetFrameTimeMs = 1000.0 / 60.0;
+        private readonly List<ViewportHost> _viewports = new();
 
         private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
         private readonly string TileCacheFolder = "TileCache/gta5";
@@ -36,22 +32,6 @@ namespace RenderLab
         private void Form1_Load(object sender, EventArgs e)
         {
             // -----------------------
-            // Camera (engine)
-            // -----------------------
-            var camera = new Camera2D
-            {
-                Position = Vector2.Zero,
-                Zoom = 2f
-            };
-
-            // -----------------------
-            // Input (engine + target)
-            // -----------------------
-            _input = new InputQueue();
-            _cameraInput = new CameraPanZoomHandler(camera);
-            _inputSource = new WinFormsInputSource(pictureBox1, _input);
-
-            // -----------------------
             // World data (engine)
             // -----------------------
             _primitives = new List<IPrimitive2D>
@@ -61,34 +41,29 @@ namespace RenderLab
                 new Line2D(new Vector2(-150, -150), new Vector2(150, 150)),
             };
 
+
             // -----------------------
-            // Viewport (target)
+            // Viewports (engine)
             // -----------------------
-            _viewport = new PictureBoxViewport(pictureBox1, camera);
+            _viewports.Add(CreateViewPortHost(pictureBox1));
+            _viewports.Add(CreateViewPortHost(pictureBox2));
 
             // -----------------------
             // Tile system (engine)
             // -----------------------
-            //var imageScaler = new WinFormsTileImageScaler();
-
-            //var debug = new DebugTileSource();
             var httpTileSource = new HttpTileSource(TileUrlTemplate);
-            var diskCache = new TileSourceDiskCache(httpTileSource, TileCacheFolder);
-
-            
-            var rawCache = new TileSourceMemoryCache(diskCache, 100);
+            var diskCache = new WinFormsTileSourceDiskCache(httpTileSource, TileCacheFolder);
+            //var memoryCache = new TileSourceMemoryCache(diskCache, 100);
             var tileScaler = new WinFormsTileImageScaler();
-            var scaler = new ScaledTileSource(rawCache, tileScaler);
-            var scaledCache = new ScaledTileSourceMemoryCache(scaler, 100);
-
+            var scaler = new ScaledTileSource(diskCache, tileScaler);
+            var scaledMemoryCache = new ScaledTileSourceMemoryCache(scaler, 200);
 
             // -----------------------
             // Render pipeline (engine)
             // -----------------------
             _pipeline = new RenderPipeline2D();
             _pipeline.AddStage(new ClearStage(ColorRgba.Black));
-            _pipeline.AddStage(new TileRenderStage(scaledCache));
-
+            _pipeline.AddStage(new TileRenderStage(scaledMemoryCache));
             _pipeline.AddStage(new PrimitiveRenderStage(() => _primitives));
             _pipeline.AddStage(new StatsRenderStage());
 
@@ -101,7 +76,7 @@ namespace RenderLab
         private void OnIdle(object? sender, EventArgs e)
         {
             // Let it run, so i can count fps
-            if (false)
+            if (true)
             {
                 var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
 
@@ -117,25 +92,48 @@ namespace RenderLab
 
         private void RenderFrame()
         {
-            // Handle input (engine)
-            _cameraInput.HandleInput(_input);
-            _input.Clear();
-
-            // Render frame
-            _viewport.BeginFrame(out var context);
-
-            try
+            foreach (var vp in _viewports)
             {
-                _pipeline.Render(context);
+                // Handle input per viewport
+                vp.CameraInput.HandleInput(vp.Input);
+                vp.Input.Clear();
+
+                // Render per viewport
+                vp.Viewport.BeginFrame(out var context);
+                try
+                {
+                    _pipeline.Render(context);
+                }
+                finally
+                {
+                    vp.Viewport.EndFrame();
+                }
             }
-            finally
+        }
+
+        ViewportHost CreateViewPortHost(PictureBox pictureBox)
+        {
+            var camera = new Camera2D();
+            var input = new InputQueue();
+            var cameraInput = new CameraPanZoomHandler(camera);
+            var viewport = new PictureBoxViewport(pictureBox, camera);
+            var inputSource = new WinFormsInputSource(pictureBox, input);
+
+            return new ViewportHost
             {
-                _viewport.EndFrame();
-            }
+                Viewport = viewport,
+                Input = input,
+                CameraInput = cameraInput
+            };
         }
     }
 
-
+    class ViewportHost
+    {
+        public required PictureBoxViewport Viewport;
+        public required InputQueue Input;
+        public required CameraPanZoomHandler CameraInput;
+    }
 
 
 

@@ -22,9 +22,8 @@ namespace Engine2D.Rendering.Stages
             Measure();
 
             _cursor = new Vector2(6, 6);
-
             DrawStatistic(context, $"FPS:  {_fps:F1}");
-            DrawStatistic(context, $"ZOOM: {context.Camera.Zoom:F2}");
+            DrawStatistic(context, $"Zoom: {context.Camera.Zoom:F2}");
         }
 
         private void DrawStatistic(in RenderContext2D context, string text)

@@ -1,5 +1,4 @@
 using Engine2D.Tiles.Abstractions;
-using Engine2D.Tiles.Rendering;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 

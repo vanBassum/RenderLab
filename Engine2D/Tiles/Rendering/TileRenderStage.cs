@@ -38,7 +38,6 @@ namespace Engine2D.Tiles.Rendering
                 return;
 
             context.Graphics.DrawImage(tileImage, screenPos);
-            context.Graphics.DrawRect(screenPos, screenSize, ColorRgba.Pink);
         }
     }
 }
