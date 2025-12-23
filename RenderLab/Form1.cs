@@ -18,11 +18,11 @@ namespace RenderLab
     public partial class Form1 : Form
     {
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
-        private const double limitFPS = -1;
         private readonly List<ViewportHost> _viewports = new();
-        HudLabel2D fpsLabel;
-        HudLabel2D zoomLabel;
-        private int _frameCount;
+        private readonly float FpsLimit = -1; // Unlimited FPS
+        private float _fpsTimeAccum;
+        private int _fpsFrameCount;
+        private float fps;
 
         //private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
         //private readonly string TileCacheFolder = "TileCache/gta5";
@@ -42,15 +42,6 @@ namespace RenderLab
             // -----------------------
             var primitives = GenerateSteeredPath(1000);
 
-            var elements = new List<IHudElement2D>();
-
-            fpsLabel = new HudLabel2D(new ScreenVector(10, 10), new ScreenVector(150, 20), "FPS: ");
-            elements.Add(fpsLabel);
-
-            zoomLabel = new HudLabel2D(    new ScreenVector(10, 34),    new ScreenVector(150, 20),    "Zoom: ");
-            elements.Add(zoomLabel);
-
-
             // -----------------------
             // Tile system
             // -----------------------
@@ -68,7 +59,7 @@ namespace RenderLab
             pipeline.AddStage(new ClearStage(ColorRgba.Black));
             pipeline.AddStage(new TileRenderStage(scaledMemoryCache));
             pipeline.AddStage(new PrimitiveRenderStage(() => primitives));
-            pipeline.AddStage(new HudRenderStage(()=> elements));
+            pipeline.AddStage(new HudRenderStage(DrawHud));
 
             // -----------------------
             // Viewports
@@ -81,25 +72,49 @@ namespace RenderLab
             Application.Idle += OnIdle;
         }
 
+        private void DrawHud(HudDrawer hud)
+        {
+            int yPos = 0;
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"FPS: {(int)fps}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"Zoom: {hud.Context.Camera.Zoom}");
+        }
+
         private void OnIdle(object? sender, EventArgs e)
         {
-            _frameCount++;
+            float elapsed = (float)_frameTimer.Elapsed.TotalSeconds;
+            if (elapsed <= 0f)
+                return;
 
-            var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
-            if (elapsedMs >= 1000.0)
+            // Accumulate FPS stats
+            _fpsTimeAccum += elapsed;
+            _fpsFrameCount++;
+
+            // Update FPS every 500 ms
+            if (_fpsTimeAccum >= 0.5f)
             {
-                var fps = _frameCount * 1000.0 / elapsedMs;
-                fpsLabel.Text = $"FPS: {fps:F1}";
-
-                var camera = _viewports[0].RenderHost.Camera;
-                zoomLabel.Text = $"Zoom: {camera.Zoom:F2}";
-
-                _frameCount = 0;
-                _frameTimer.Restart();
+                fps = _fpsFrameCount / _fpsTimeAccum;
+                _fpsTimeAccum = 0f;
+                _fpsFrameCount = 0;
             }
 
+            // Optional FPS limiting
+            if (FpsLimit > 0)
+            {
+                float targetFrameTime = 1f / FpsLimit;
+                if (elapsed < targetFrameTime)
+                {
+                    int sleepMs = (int)((targetFrameTime - elapsed) * 1000f);
+                    if (sleepMs > 0)
+                        Thread.Sleep(sleepMs);
+                    return;
+                }
+            }
+
+            _frameTimer.Restart();
             RenderFrame();
         }
+
+
 
 
         private void RenderFrame()
@@ -108,7 +123,6 @@ namespace RenderLab
             {
                 vp.CameraInput.HandleInput(vp.Input);
                 vp.Input.Clear();
-
                 vp.RenderHost.RequestRedraw();
             }
         }

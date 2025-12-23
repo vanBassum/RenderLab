@@ -1,10 +1,6 @@
-using Engine2D.Primitives.Abstractions;
-using Engine2D.Primitives.Geometry;
+using Engine2D.Calc;
+using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
-using System.Diagnostics;
-using System.Drawing;
-using System.Numerics;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Engine2D.Hud.Stages
 {
@@ -14,39 +10,40 @@ namespace Engine2D.Hud.Stages
     // =========================
     public sealed class HudRenderStage : IRenderer2D
     {
-        private readonly Func<IEnumerable<IHudElement2D>> _getElements;
+        private readonly Action<HudDrawer> _Draw;
 
-        public HudRenderStage(Func<IEnumerable<IHudElement2D>> getElements)
+        public HudRenderStage(Action<HudDrawer> draw)
         {
-            _getElements = getElements;
+            _Draw = draw;
         }
 
         public void Render(in RenderContext2D context)
         {
-            foreach (var element in _getElements())
-            {
-                RenderElement(context, element);
-            }
+            HudDrawer drawer = new(context);
+            _Draw(drawer);
+        }
+    }
+
+
+
+    public class HudDrawer
+    {
+        public RenderContext2D Context { get; }
+
+        public HudDrawer(RenderContext2D context)
+        {
+            Context = context;
         }
 
-        private void RenderElement(in RenderContext2D context, IHudElement2D element)
+        public void DrawLabel(ScreenVector position, ScreenVector size, string text)
         {
-            switch (element)
-            {
-                case HudLabel2D label:
-                    RenderLabel(context, label);
-                    break;
-                default:
-                    throw new Exception($"Type not supported {element.GetType()}");
-            }
-
-        }
+            ScreenVector Padding = new(6, 4);
+            ColorRgba Background = new(0, 0, 0, 160);
+            ColorRgba Foreground = ColorRgba.Lime;
 
 
-        private void RenderLabel(in RenderContext2D context, HudLabel2D label) 
-        {
-            context.Graphics.FillRect(label.Position, label.Size, label.Background);
-            context.Graphics.DrawText(label.Position + label.Padding, label.Text, label.Foreground);
+            Context.Graphics.FillRect(position, size, Background);
+            Context.Graphics.DrawText(position + Padding, text, Foreground);
         }
     }
 }
