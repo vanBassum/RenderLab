@@ -4,24 +4,17 @@ using Engine2D.Tiles.Abstractions;
 
 namespace RenderLab.Targets.WinForms
 {
-    // =========================
-    // WinForms backend adapter
-    // =========================
     public sealed class WinFormsGraphics2D : IGraphics2D, IDisposable
     {
         private readonly Graphics _graphics;
-        private readonly Font _font;
+        private readonly WinFormsTextDrawer _text;
 
-        public WinFormsGraphics2D(Graphics graphics, Font font)
+        public WinFormsGraphics2D(Graphics graphics, WinFormsTextDrawer text)
         {
             _graphics = graphics;
-            _font = font;
+            _text = text;
         }
 
-        public void Dispose()
-        {
-            _font.Dispose();
-        }
 
         public void Clear(ColorRgba color)
         {
@@ -39,9 +32,13 @@ namespace RenderLab.Targets.WinForms
             if (string.IsNullOrEmpty(text))
                 return;
 
-            using var brush = new SolidBrush(ToColor(color));
-            //_graphics.DrawString(text, _font, brush, position.X, position.Y, StringFormat.GenericTypographic);
+            // Use int pixel coords for TextRenderer (it’s a WinForms/GDI API)
+            _text.Draw(_graphics, (int)position.X, (int)position.Y, text, ToColorClamped(color));
         }
+
+        private static Color ToColorClamped(ColorRgba c) => Color.FromArgb(ClampByte(c.A), ClampByte(c.R), ClampByte(c.G), ClampByte(c.B));
+        private static int ClampByte(int v) => v < 0 ? 0 : (v > 255 ? 255 : v);
+
 
         public void FillRect(ScreenVector position, ScreenVector size, ColorRgba color)
         {
@@ -73,14 +70,13 @@ namespace RenderLab.Targets.WinForms
         public void DrawRect(ScreenVector screenPos, ScreenVector screenSize, ColorRgba color)
         {
             using var pen = new Pen(ToColor(color));
-            _graphics.DrawRectangle(
-                pen,
-                screenPos.X,
-                screenPos.Y,
-                screenSize.X,
-                screenSize.Y);
+            _graphics.DrawRectangle(pen, screenPos.X, screenPos.Y, screenSize.X, screenSize.Y);
         }
 
-
+        public void Dispose()
+        {
+        }
     }
 }
+
+
