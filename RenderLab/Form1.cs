@@ -21,8 +21,11 @@ namespace RenderLab
         private const double TargetFrameTimeMs = 1000.0 / 60.0;
         private readonly List<ViewportHost> _viewports = new();
 
-        private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
-        private readonly string TileCacheFolder = "TileCache/gta5";
+        //private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
+        //private readonly string TileCacheFolder = "TileCache/gta5";
+
+        private readonly string TileUrlTemplate = "https://storage-cdn.wemod.com/maps/b1c977d8-59dc-4ff7-b0f0-63488f7bfcd6/tiles/{z}/{y}/{x}.webp";
+        private readonly string TileCacheFolder = "TileCache/fallout4";
 
         public Form1()
         {
@@ -49,7 +52,7 @@ namespace RenderLab
             // -----------------------
             // Tile system
             // -----------------------
-            var httpTileSource = new HttpTileSource(TileUrlTemplate);
+            var httpTileSource = new HttpWebpTileSource(TileUrlTemplate);
             var diskCache = new WinFormsTileSourceDiskCache(httpTileSource, TileCacheFolder);
             //var memoryCache = new TileSourceMemoryCache(diskCache, 100);
             var tileScaler = new WinFormsTileImageScaler();

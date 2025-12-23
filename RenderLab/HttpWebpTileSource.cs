@@ -1,14 +1,17 @@
 ﻿using Engine2D.Tiles.Abstractions;
 using RenderLab.Targets.WinForms;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace RenderLab
 {
-    public sealed class HttpTileSource : ITileSource, IDisposable
+    public sealed class HttpWebpTileSource : ITileSource, IDisposable
     {
         public int MinZ { get; } = 0;
-        public int MaxZ { get; } = 6;
+        public int MaxZ { get; } = 5;
 
         private readonly string _urlTemplate;
         private readonly HttpClient _httpClient;
@@ -17,7 +20,10 @@ namespace RenderLab
         private readonly ConcurrentDictionary<string, byte> _failedUrls = new();
         private readonly ConcurrentDictionary<string, Task<ITileImage?>> _inFlight = new();
 
-        public HttpTileSource(string urlTemplate, int maxConcurrentDownloads = 4, HttpClient? httpClient = null)
+        public HttpWebpTileSource(
+            string urlTemplate,
+            int maxConcurrentDownloads = 4,
+            HttpClient? httpClient = null)
         {
             _urlTemplate = urlTemplate
                 ?? throw new ArgumentNullException(nameof(urlTemplate));
@@ -26,10 +32,6 @@ namespace RenderLab
             _downloadLimiter = new SemaphoreSlim(maxConcurrentDownloads);
         }
 
-        // Return values:
-        // - null                      → tile is pending (still downloading)
-        // - WinFormsTileImage.Empty   → tile is known missing / invalid
-        // - ITileImage                → tile is available
         public ITileImage? GetTile(TileKey tileKey)
         {
             if (tileKey.Z < MinZ || tileKey.Z > MaxZ)
@@ -40,31 +42,26 @@ namespace RenderLab
 
             var url = BuildUrl(tileKey.X, tileKey.Y, tileKey.Z);
 
-            // Known permanent failure → empty
             if (_failedUrls.ContainsKey(url))
                 return null;
 
-            // Start download if not already in progress
             var task = _inFlight.GetOrAdd(url, _ => DownloadAsync(url));
 
-            // Still downloading → pending
             if (!task.IsCompleted)
                 return null;
 
-            // Download finished → remove from in-flight
             _inFlight.TryRemove(url, out _);
 
-            // Failed or 404 → blacklist and return empty
             if (task.IsFaulted || task.Result == null)
             {
-                MarkFailed(url, task.Exception?.GetBaseException().Message ?? "404");
+                MarkFailed(
+                    url,
+                    task.Exception?.GetBaseException().Message ?? "404");
                 return null;
             }
 
-            // Success
             return task.Result;
         }
-
 
         private async Task<ITileImage?> DownloadAsync(string url)
         {
@@ -83,26 +80,15 @@ namespace RenderLab
                     .ReadAsStreamAsync()
                     .ConfigureAwait(false);
 
-                using var src = new Bitmap(stream);
-                src.SetResolution(96f, 96f);
+                using var image = await SixLabors.ImageSharp.Image.LoadAsync<Rgba32>(stream)
+                    .ConfigureAwait(false);
 
-                var dst = new Bitmap(
-                    src.Width,
-                    src.Height,
-                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-                dst.SetResolution(96f, 96f);
-
-                using (var g = Graphics.FromImage(dst))
-                {
-                    g.Clear(Color.Transparent);
-                    g.DrawImageUnscaled(src, 0, 0);
-                }
-
-                return new WinFormsTileImage(dst);
+                var bitmap = ConvertToBitmap(image);
+                return new WinFormsTileImage(bitmap);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
+                Debug.WriteLine($"HttpWebpTileSource error: {ex}");
                 return null;
             }
             finally
@@ -111,12 +97,52 @@ namespace RenderLab
             }
         }
 
+        private static System.Drawing.Bitmap ConvertToBitmap(Image<Rgba32> image)
+        {
+            var bitmap = new System.Drawing.Bitmap(
+                image.Width,
+                image.Height,
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
+            bitmap.SetResolution(96f, 96f);
+
+            var rect = new System.Drawing.Rectangle(
+                0, 0, bitmap.Width, bitmap.Height);
+
+            var data = bitmap.LockBits(
+                rect,
+                System.Drawing.Imaging.ImageLockMode.WriteOnly,
+                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            try
+            {
+                image.ProcessPixelRows(accessor =>
+                {
+                    for (int y = 0; y < accessor.Height; y++)
+                    {
+                        var srcRow = accessor.GetRowSpan(y);
+                        var dstPtr = data.Scan0 + y * data.Stride;
+
+                        Marshal.Copy(
+                            MemoryMarshal.AsBytes(srcRow).ToArray(),
+                            0,
+                            dstPtr,
+                            srcRow.Length * 4);
+                    }
+                });
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+
+            return bitmap;
+        }
 
         private void MarkFailed(string url, string reason)
         {
             _failedUrls.TryAdd(url, 0);
-            Debug.WriteLine($"HttpTileSource: Blacklisted {url} ({reason})");
+            Debug.WriteLine($"HttpWebpTileSource: Blacklisted {url} ({reason})");
         }
 
         private string BuildUrl(int x, int y, int z)
@@ -132,6 +158,4 @@ namespace RenderLab
             _httpClient.Dispose();
         }
     }
-
 }
-
