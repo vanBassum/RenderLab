@@ -1,7 +1,6 @@
 using Engine2D.Calc;
 using Engine2D.Rendering.Graphics;
 using Engine2D.Tiles.Abstractions;
-using System.Numerics;
 
 namespace RenderLab.Targets.WinForms
 {
@@ -13,10 +12,10 @@ namespace RenderLab.Targets.WinForms
         private readonly Graphics _graphics;
         private readonly Font _font;
 
-        public WinFormsGraphics2D(Graphics graphics)
+        public WinFormsGraphics2D(Graphics graphics, Font font)
         {
             _graphics = graphics;
-            _font = new Font("Consolas", 10);
+            _font = font;
         }
 
         public void Dispose()
@@ -37,8 +36,11 @@ namespace RenderLab.Targets.WinForms
 
         public void DrawText(ScreenVector position, string text, ColorRgba color)
         {
+            if (string.IsNullOrEmpty(text))
+                return;
+
             using var brush = new SolidBrush(ToColor(color));
-            _graphics.DrawString(text, _font, brush, position.X, position.Y);
+            //_graphics.DrawString(text, _font, brush, position.X, position.Y, StringFormat.GenericTypographic);
         }
 
         public void FillRect(ScreenVector position, ScreenVector size, ColorRgba color)

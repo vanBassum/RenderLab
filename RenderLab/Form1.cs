@@ -16,9 +16,6 @@ namespace RenderLab
 {
     public partial class Form1 : Form
     {
-        private RenderPipeline2D _pipeline = null!;
-        private List<IPrimitive2D> _primitives = null!;
-
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
         private const double TargetFrameTimeMs = 1000.0 / 60.0;
         private readonly List<ViewportHost> _viewports = new();
@@ -39,12 +36,8 @@ namespace RenderLab
             // -----------------------
             // World data
             // -----------------------
-            _primitives = GenerateSteeredPath(1000);
+            var primitives = GenerateSteeredPath(1000);
 
-            // -----------------------
-            // Viewports
-            // -----------------------
-            _viewports.Add(CreateViewPortHost(pictureBox1));
 
             // -----------------------
             // Tile system
@@ -59,11 +52,16 @@ namespace RenderLab
             // -----------------------
             // Render pipeline
             // -----------------------
-            _pipeline = new RenderPipeline2D();
-            _pipeline.AddStage(new ClearStage(ColorRgba.Black));
-            _pipeline.AddStage(new TileRenderStage(scaledMemoryCache));
-            _pipeline.AddStage(new PrimitiveRenderStage(() => _primitives));
-            _pipeline.AddStage(new StatsRenderStage());
+            var pipeline = new RenderPipeline2D();
+            pipeline.AddStage(new ClearStage(ColorRgba.Black));
+            pipeline.AddStage(new TileRenderStage(scaledMemoryCache));
+            pipeline.AddStage(new PrimitiveRenderStage(() => primitives));
+            pipeline.AddStage(new StatsRenderStage());
+
+            // -----------------------
+            // Viewports
+            // -----------------------
+            _viewports.Add(CreateViewPortHost(pictureBox1, pipeline));
 
             // -----------------------
             // Drive frames
@@ -91,62 +89,32 @@ namespace RenderLab
         {
             foreach (var vp in _viewports)
             {
-                // Handle input per viewport
                 vp.CameraInput.HandleInput(vp.Input);
                 vp.Input.Clear();
 
-                // Render per viewport
-                vp.Viewport.BeginFrame(out var context);
-                try
-                {
-                    _pipeline.Render(context);
-                }
-                finally
-                {
-                    vp.Viewport.EndFrame();
-                }
+                vp.RenderHost.RequestRedraw();
             }
         }
 
-        ViewportHost CreateViewPortHost(PictureBox pictureBox)
+
+        ViewportHost CreateViewPortHost(PictureBox pictureBox, RenderPipeline2D pipeLine)
         {
             var camera = new Camera2D();
             var input = new InputQueue();
             var cameraInput = new CameraPanZoomHandler(camera);
-            var viewport = new PictureBoxViewport(pictureBox, camera);
+            var renderHost = new PictureBoxRenderHost(pictureBox, pipeLine, camera);
             var inputSource = new WinFormsInputSource(pictureBox, input);
 
             return new ViewportHost
             {
-                Viewport = viewport,
+                RenderHost = renderHost,
                 Input = input,
                 CameraInput = cameraInput
             };
         }
 
-        private static List<IPrimitive2D> GenerateRandomLines(    int count,    float worldSize = 256f,    int? seed = 12345)
-        {
-            var rnd = seed.HasValue ? new Random(seed.Value) : new Random();
-            var list = new List<IPrimitive2D>(count);
-
-            float Half = worldSize * 0.5f;
-
-            for (int i = 0; i < count; i++)
-            {
-                var a = new WorldVector(
-                    (float)(rnd.NextDouble() * worldSize),
-                    (float)(rnd.NextDouble() * worldSize));
-
-                var b = new WorldVector(
-                    (float)(rnd.NextDouble() * worldSize),
-                    (float)(rnd.NextDouble() * worldSize));
 
 
-                list.Add(new Line2D(a, b));
-            }
-
-            return list;
-        }
 
 
         private static List<IPrimitive2D> GenerateSteeredPath(
@@ -206,11 +174,10 @@ namespace RenderLab
 
     class ViewportHost
     {
-        public required PictureBoxViewport Viewport;
+        public required PictureBoxRenderHost RenderHost;
         public required InputQueue Input;
         public required CameraPanZoomHandler CameraInput;
     }
-
 
 
 }
