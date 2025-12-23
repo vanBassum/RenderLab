@@ -13,8 +13,7 @@ namespace Engine2D.Primitives.Stages
         private readonly Func<IEnumerable<IPrimitive2D>> _getPrimitives;
         private readonly WorldCoverageLineFilter _filter;
 
-        public PrimitiveRenderStage(
-            Func<IEnumerable<IPrimitive2D>> getPrimitives)
+        public PrimitiveRenderStage(Func<IEnumerable<IPrimitive2D>> getPrimitives)
         {
             _getPrimitives = getPrimitives;
             _filter = new WorldCoverageLineFilter();

@@ -1,4 +1,5 @@
 using Engine2D.Calc;
+using Engine2D.Hud.Stages;
 using Engine2D.Input;
 using Engine2D.Primitives.Abstractions;
 using Engine2D.Primitives.Geometry;
@@ -17,8 +18,11 @@ namespace RenderLab
     public partial class Form1 : Form
     {
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
-        private const double TargetFrameTimeMs = 1000.0 / 60.0;
+        private const double limitFPS = -1;
         private readonly List<ViewportHost> _viewports = new();
+        HudLabel2D fpsLabel;
+        HudLabel2D zoomLabel;
+        private int _frameCount;
 
         //private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
         //private readonly string TileCacheFolder = "TileCache/gta5";
@@ -38,11 +42,19 @@ namespace RenderLab
             // -----------------------
             var primitives = GenerateSteeredPath(1000);
 
+            var elements = new List<IHudElement2D>();
+
+            fpsLabel = new HudLabel2D(new ScreenVector(10, 10), new ScreenVector(150, 20), "FPS: ");
+            elements.Add(fpsLabel);
+
+            zoomLabel = new HudLabel2D(    new ScreenVector(10, 34),    new ScreenVector(150, 20),    "Zoom: ");
+            elements.Add(zoomLabel);
+
 
             // -----------------------
             // Tile system
             // -----------------------
-            var httpTileSource = new HttpWebpTileSource(TileUrlTemplate);
+            var httpTileSource = new HttpWebpTileSource(TileUrlTemplate, 8);
             var diskCache = new WinFormsTileSourceDiskCache(httpTileSource, TileCacheFolder);
             //var memoryCache = new TileSourceMemoryCache(diskCache, 100);
             var tileScaler = new WinFormsTileImageScaler();
@@ -56,7 +68,7 @@ namespace RenderLab
             pipeline.AddStage(new ClearStage(ColorRgba.Black));
             pipeline.AddStage(new TileRenderStage(scaledMemoryCache));
             pipeline.AddStage(new PrimitiveRenderStage(() => primitives));
-            pipeline.AddStage(new StatsRenderStage());
+            pipeline.AddStage(new HudRenderStage(()=> elements));
 
             // -----------------------
             // Viewports
@@ -71,19 +83,24 @@ namespace RenderLab
 
         private void OnIdle(object? sender, EventArgs e)
         {
-            // Let it run, so i can count fps
-            if (false)
+            _frameCount++;
+
+            var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
+            if (elapsedMs >= 1000.0)
             {
-                var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
+                var fps = _frameCount * 1000.0 / elapsedMs;
+                fpsLabel.Text = $"FPS: {fps:F1}";
 
-                if (elapsedMs < TargetFrameTimeMs)
-                    return;
+                var camera = _viewports[0].RenderHost.Camera;
+                zoomLabel.Text = $"Zoom: {camera.Zoom:F2}";
 
+                _frameCount = 0;
                 _frameTimer.Restart();
             }
 
             RenderFrame();
         }
+
 
         private void RenderFrame()
         {
@@ -101,7 +118,7 @@ namespace RenderLab
         {
             var camera = new Camera2D();
             var input = new InputQueue();
-            var cameraInput = new CameraPanZoomHandler(camera);
+            var cameraInput = new CameraPanZoomHandler(camera, 1, 32);
             var renderHost = new PictureBoxRenderHost(pictureBox, pipeLine, camera);
             var inputSource = new WinFormsInputSource(pictureBox, input);
 

@@ -11,7 +11,7 @@ namespace RenderLab
     public sealed class HttpWebpTileSource : ITileSource, IDisposable
     {
         public int MinZ { get; } = 0;
-        public int MaxZ { get; } = 5;
+        public int MaxZ { get; } = 6;
 
         private readonly string _urlTemplate;
         private readonly HttpClient _httpClient;
@@ -20,10 +20,7 @@ namespace RenderLab
         private readonly ConcurrentDictionary<string, byte> _failedUrls = new();
         private readonly ConcurrentDictionary<string, Task<ITileImage?>> _inFlight = new();
 
-        public HttpWebpTileSource(
-            string urlTemplate,
-            int maxConcurrentDownloads = 4,
-            HttpClient? httpClient = null)
+        public HttpWebpTileSource(string urlTemplate, int maxConcurrentDownloads = 4, HttpClient? httpClient = null)
         {
             _urlTemplate = urlTemplate
                 ?? throw new ArgumentNullException(nameof(urlTemplate));

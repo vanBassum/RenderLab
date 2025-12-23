@@ -15,7 +15,6 @@ namespace RenderLab.Targets.WinForms
             _text = text;
         }
 
-
         public void Clear(ColorRgba color)
         {
             _graphics.Clear(ToColor(color));
@@ -32,13 +31,8 @@ namespace RenderLab.Targets.WinForms
             if (string.IsNullOrEmpty(text))
                 return;
 
-            // Use int pixel coords for TextRenderer (it’s a WinForms/GDI API)
-            _text.Draw(_graphics, (int)position.X, (int)position.Y, text, ToColorClamped(color));
+            _text.Draw(_graphics, position.X, position.Y, text, ToColor(color));
         }
-
-        private static Color ToColorClamped(ColorRgba c) => Color.FromArgb(ClampByte(c.A), ClampByte(c.R), ClampByte(c.G), ClampByte(c.B));
-        private static int ClampByte(int v) => v < 0 ? 0 : (v > 255 ? 255 : v);
-
 
         public void FillRect(ScreenVector position, ScreenVector size, ColorRgba color)
         {
@@ -46,14 +40,11 @@ namespace RenderLab.Targets.WinForms
             _graphics.FillRectangle(brush, position.X, position.Y, size.X, size.Y);
         }
 
-        private static Color ToColor(ColorRgba c)
-            => Color.FromArgb(c.A, c.R, c.G, c.B);
 
         public void DrawImage(ITileImage image, ScreenVector topLeft)
         {
             if (image is not WinFormsTileImage wf)
-                throw new NotSupportedException(
-                    $"Tile image type {image.GetType().Name} not supported.");
+                throw new NotSupportedException($"Tile image type {image.GetType().Name} not supported.");
 
             _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y);
         }
@@ -61,8 +52,7 @@ namespace RenderLab.Targets.WinForms
         public void DrawImage(ITileImage image, ScreenVector topLeft, ScreenVector size)
         {
             if (image is not WinFormsTileImage wf)
-                throw new NotSupportedException(
-                    $"Tile image type {image.GetType().Name} not supported.");
+                throw new NotSupportedException($"Tile image type {image.GetType().Name} not supported.");
 
             _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y, size.X, size.Y);
         }
@@ -76,6 +66,8 @@ namespace RenderLab.Targets.WinForms
         public void Dispose()
         {
         }
+
+        private static Color ToColor(ColorRgba c) => Color.FromArgb(c.A, c.R, c.G, c.B);
     }
 }
 

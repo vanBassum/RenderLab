@@ -33,7 +33,7 @@ namespace Engine2D.Tiles.Caching
             if (tile != null)
             {
                 SaveTile(tile, path);
-                Debug.WriteLine($"Disk cache miss for tile {tileKey}. Saved to {path}");
+                //Debug.WriteLine($"Disk cache miss for tile {tileKey}. Saved to {path}");
             }
 
             return tile;
@@ -52,8 +52,7 @@ namespace Engine2D.Tiles.Caching
 
             // Assumes WinFormsTileImage – explicit by design
             if (tile is not WinFormsTileImage wf)
-                throw new InvalidOperationException(
-                    "DiskTileSourceCache currently requires WinFormsTileImage");
+                throw new InvalidOperationException("DiskTileSourceCache currently requires WinFormsTileImage");
 
             wf.Bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
         }
