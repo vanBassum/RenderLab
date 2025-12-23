@@ -1,70 +1,50 @@
-﻿using Engine2D.Rendering.Camera;
-using Engine2D.Tiles.Abstractions;
+﻿using Engine2D.Tiles.Abstractions;
 using System.Numerics;
 
-public sealed class TileGridProvider : ITileGridProvider
+namespace Engine2D.Tiles.Providers
 {
-    private readonly Camera2D _camera;
-    private readonly float _baseTileWorldSize;
-
-    public TileGridProvider(Camera2D camera, float baseTileWorldSize = 256f)
+    public sealed class TileGridProvider : ITileGridProvider
     {
-        _camera = camera;
-        _baseTileWorldSize = baseTileWorldSize;
-    }
+        private readonly float _baseTileWorldSize;
+        private readonly int _tilePixelSize;
 
-    public IEnumerable<TileRenderItem> GetTiles(Vector2 worldMin, Vector2 worldMax)
-    {
-        // Select discrete zoom level from camera zoom
-        // Z = 0 → base resolution
-        int z = Math.Max(0, (int)MathF.Floor(MathF.Log2(_camera.Zoom)));
-
-        // World size of one tile at this zoom
-        float tileWorldSize = _baseTileWorldSize / (1 << z);
-
-        // Native pixel size of tiles at this zoom
-        int pixelSize = (int)(_baseTileWorldSize * (1 << z));
-
-        // Compute inclusive tile bounds
-        int minX = (int)MathF.Floor(worldMin.X / tileWorldSize);
-        int minY = (int)MathF.Floor(worldMin.Y / tileWorldSize);
-
-        int maxX = (int)MathF.Floor((worldMax.X - float.Epsilon) / tileWorldSize);
-        int maxY = (int)MathF.Floor((worldMax.Y - float.Epsilon) / tileWorldSize);
-
-        for (int y = minY; y <= maxY; y++)
+        public TileGridProvider(float baseTileWorldSize = 256f, int tilePixelSize = 256)
         {
-            for (int x = minX; x <= maxX; x++)
+            _baseTileWorldSize = baseTileWorldSize;
+            _tilePixelSize = tilePixelSize;
+        }
+
+        public IEnumerable<TileRenderItem> GetTiles(Vector2 worldMin, Vector2 worldMax, float zoom)
+        {
+            // Discrete LOD selection (power-of-two zoom assumed)
+            int z = Math.Max(0, (int)MathF.Ceiling(MathF.Log2(zoom)));
+
+
+            float tileWorldSize = _baseTileWorldSize / (1 << z);
+
+            int minX = (int)MathF.Floor(worldMin.X / tileWorldSize);
+            int minY = (int)MathF.Floor(worldMin.Y / tileWorldSize);
+            int maxX = (int)MathF.Floor(worldMax.X / tileWorldSize);
+            int maxY = (int)MathF.Floor(worldMax.Y / tileWorldSize);
+
+            for (int y = minY; y <= maxY; y++)
             {
-                // World position of the tile origin
-                var worldPos = new Vector2(
-                    x * tileWorldSize,
-                    y * tileWorldSize);
-
-                // Convert to screen space
-                var screenPos = _camera.WorldToScreen(worldPos);
-
-                // Screen size is purely visual
-                var screenSize = new Vector2(
-                    tileWorldSize * _camera.Zoom,
-                    tileWorldSize * _camera.Zoom);
-
-                yield return new TileRenderItem
+                for (int x = minX; x <= maxX; x++)
                 {
-                    TileKey = new TileKey
+                    yield return new TileRenderItem
                     {
-                        X = x,
-                        Y = y,
-                        Z = z,
-                        PixelSize = pixelSize
-                    },
-                    ScreenPosition = screenPos,
-                    ScreenSize = screenSize
-                };
+                        TileKey = new TileKey
+                        {
+                            X = x,
+                            Y = y,
+                            Z = z,
+                            PixelSize = _tilePixelSize
+                        },
+                        WorldPosition = new Vector2(x * tileWorldSize, y * tileWorldSize),
+                        WorldSize = new Vector2(tileWorldSize)
+                    };
+                }
             }
         }
     }
-
 }
-
-

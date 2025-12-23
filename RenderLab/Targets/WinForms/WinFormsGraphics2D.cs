@@ -58,6 +58,15 @@ namespace RenderLab.Targets.WinForms
             _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y);
         }
 
+        public void DrawImage(ITileImage image, Vector2 topLeft, Vector2 size)
+        {
+            if (image is not WinFormsTileImage wf)
+                throw new NotSupportedException(
+                    $"Tile image type {image.GetType().Name} not supported.");
+
+            _graphics.DrawImage(wf.Bitmap, topLeft.X, topLeft.Y, size.X, size.Y);
+        }
+
         public void DrawRect(Vector2 screenPos, Vector2 screenSize, ColorRgba color)
         {
             using var pen = new Pen(ToColor(color));
@@ -68,6 +77,7 @@ namespace RenderLab.Targets.WinForms
                 screenSize.X,
                 screenSize.Y);
         }
+
 
     }
 }

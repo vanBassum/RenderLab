@@ -26,6 +26,7 @@ namespace RenderLab
         private const double TargetFrameTimeMs = 1000.0 / 60.0;
 
         private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
+        private readonly string TileCacheFolder = "TileCache/gta5";
 
         public Form1()
         {
@@ -40,7 +41,7 @@ namespace RenderLab
             var camera = new Camera2D
             {
                 Position = Vector2.Zero,
-                Zoom = 2.5f
+                Zoom = 2f
             };
 
             // -----------------------
@@ -72,12 +73,13 @@ namespace RenderLab
 
             //var debug = new DebugTileSource();
             var httpTileSource = new HttpTileSource(TileUrlTemplate);
-            var diskCache = new TileSourceDiskCache(httpTileSource, "TileCache");
+            var diskCache = new TileSourceDiskCache(httpTileSource, TileCacheFolder);
 
             
             var rawCache = new TileSourceMemoryCache(diskCache, 100);
-            //var scaler = new TileScaler(grid, camera, imageScaler);
-            //var scaledCache = new TileProviderMemoryCache(scaler, 100);
+            var tileScaler = new WinFormsTileImageScaler();
+            var scaler = new ScaledTileSource(rawCache, tileScaler);
+            var scaledCache = new ScaledTileSourceMemoryCache(scaler, 100);
 
 
             // -----------------------
@@ -85,10 +87,10 @@ namespace RenderLab
             // -----------------------
             _pipeline = new RenderPipeline2D();
             _pipeline.AddStage(new ClearStage(ColorRgba.Black));
-            _pipeline.AddStage(new TileRenderStage(rawCache));
+            _pipeline.AddStage(new TileRenderStage(scaledCache));
 
             _pipeline.AddStage(new PrimitiveRenderStage(() => _primitives));
-            _pipeline.AddStage(new FpsCounterStage());
+            _pipeline.AddStage(new StatsRenderStage());
 
             // -----------------------
             // Drive frames

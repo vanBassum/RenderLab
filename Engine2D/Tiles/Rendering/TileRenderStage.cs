@@ -2,47 +2,43 @@
 using Engine2D.Rendering.Pipeline;
 using Engine2D.Tiles.Abstractions;
 using Engine2D.Tiles.Providers;
-using Engine2D.Tiles.Scaling;
-using System;
+using System.Drawing;
+using System.Numerics;
 
 namespace Engine2D.Tiles.Rendering
 {
     public sealed class TileRenderStage : IRenderer2D
     {
-        private readonly ITileSource _tileSource;
+        private readonly IScaledTileSource _tileSource;
+        private readonly TileGridProvider _gridProvider = new();
+        private readonly TileCoverageProvider _coverageProvider = new();
 
-        public TileRenderStage(ITileSource tileSource)
+        public TileRenderStage(IScaledTileSource tileSource)
         {
             _tileSource = tileSource;
         }
 
         public void Render(in RenderContext2D context)
         {
-            ITileGridProvider _gridProvider = new TileGridProvider(context.Camera);
-            TileCoverageProvider coverage = new TileCoverageProvider(context.Camera);
+            _coverageProvider.GetWorldCoverage(context.Camera, context.Viewport, out var worldMin, out var worldMax);
 
-            coverage.GetWorldCoverage(context.Camera.ViewportSize, out var worldMin, out var worldMax);
-
-            foreach (var tile in _gridProvider.GetTiles(worldMin, worldMax))
+            foreach (var tile in _gridProvider.GetTiles(worldMin, worldMax, context.Camera.Zoom))
             {
                 RenderTile(tile, context);
             }
         }
 
-        private void RenderTile(TileRenderItem tile, in RenderContext2D context)
+        private void RenderTile(TileRenderItem tileRenderItem, in RenderContext2D context)
         {
-            var camera = context.Camera;
-            var tileImage = _tileSource.GetTile(tile.TileKey);
+            var screenPos = context.Viewport.WorldToScreen(tileRenderItem.WorldPosition, context.Camera);
+            var screenSize = tileRenderItem.WorldSize * context.Camera.Zoom;
 
+            var tileImage = _tileSource.GetTile(tileRenderItem.TileKey, screenSize);
             if (tileImage == null)
                 return;
 
-            // For now no scaling!
-            context.Graphics.DrawImage(tileImage, tile.ScreenPosition);
+            context.Graphics.DrawImage(tileImage, screenPos);
+            context.Graphics.DrawRect(screenPos, screenSize, ColorRgba.Pink);
         }
     }
 }
-
-
-
-

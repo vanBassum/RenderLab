@@ -5,27 +5,18 @@ namespace Engine2D.Tiles.Providers
 {
     public sealed class TileCoverageProvider
     {
-        private readonly Camera2D _camera;
-
-        public TileCoverageProvider(Camera2D camera)
+        public void GetWorldCoverage(
+            Camera2D camera,
+            IViewport2D viewport,
+            out Vector2 worldMin,
+            out Vector2 worldMax)
         {
-            _camera = camera;
+            // Corner sampling using the viewport’s inverse transform.
+            var a = viewport.ScreenToWorld(Vector2.Zero, camera);
+            var b = viewport.ScreenToWorld(viewport.ScreenSize, camera);
+
+            worldMin = new Vector2(MathF.Min(a.X, b.X), MathF.Min(a.Y, b.Y));
+            worldMax = new Vector2(MathF.Max(a.X, b.X), MathF.Max(a.Y, b.Y));
         }
-
-        public void GetWorldCoverage(Vector2 viewportSize, out Vector2 worldMin, out Vector2 worldMax)
-        {
-            Vector2 halfViewportWorld =
-                viewportSize / _camera.Zoom * 0.5f;
-
-            // Padding: always request slightly more than visible area
-            // This avoids missing edge tiles due to rounding
-            const float paddingFactor = 1.1f;
-
-            halfViewportWorld *= paddingFactor;
-
-            worldMin = _camera.Position - halfViewportWorld;
-            worldMax = _camera.Position + halfViewportWorld;
-        }
-
     }
 }

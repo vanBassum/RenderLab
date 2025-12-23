@@ -13,6 +13,7 @@ namespace Engine2D.Rendering.Graphics
         void DrawLine(Vector2 a, Vector2 b, ColorRgba color, float thickness = 1.0f);
         void DrawText(Vector2 position, string text, ColorRgba color);
         void DrawImage(ITileImage image, Vector2 topLeft);
+        void DrawImage(ITileImage image, Vector2 topLeft, Vector2 size);
         void FillRect(Vector2 position, Vector2 size, ColorRgba color);
         void DrawRect(Vector2 screenPos, Vector2 screenSize, ColorRgba red);
     }

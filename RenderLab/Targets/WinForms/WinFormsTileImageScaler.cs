@@ -1,12 +1,13 @@
 using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Rendering;
+using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 
 namespace RenderLab.Targets.WinForms
 {
- /*   public sealed class WinFormsTileImageScaler : ITileImageScaler
+    public sealed class WinFormsTileImageScaler : ITileScaler
     {
-        public ITileImage Scale(ITileImage source, int targetPixelSize)
+        public ITileImage Scale(ITileImage source, int targetWidth, int targetHeight)
         {
             if (source is not WinFormsTileImage wf)
                 throw new NotSupportedException(
@@ -14,36 +15,99 @@ namespace RenderLab.Targets.WinForms
 
             var src = wf.Bitmap;
 
-            // Fast path: no scaling needed
-            if (src.Width == targetPixelSize &&
-                src.Height == targetPixelSize)
-            {
-                return source;
-            }
+            var dst = CreateDestinationBitmap(src, targetWidth, targetHeight);
 
-            var dst = new Bitmap(
-                targetPixelSize,
-                targetPixelSize,
-                PixelFormat.Format32bppArgb);
+            float scaleX = (float)targetWidth / src.Width;
+            float scaleY = (float)targetHeight / src.Height;
 
             using (var g = Graphics.FromImage(dst))
             {
-                g.InterpolationMode = InterpolationMode.HighQualityBilinear;
-                g.PixelOffsetMode = PixelOffsetMode.Half;
-                g.SmoothingMode = SmoothingMode.None;
+                ConfigureGraphics(g, scaleX, scaleY);
 
-                g.DrawImage(
-                    src,
-                    new Rectangle(0, 0, targetPixelSize, targetPixelSize),
-                    new Rectangle(0, 0, src.Width, src.Height),
-                    GraphicsUnit.Pixel);
+                DrawScaled(g, src, targetWidth, targetHeight);
             }
 
             return new WinFormsTileImage(dst);
         }
-    }*/
 
+        // -------------------------
+        // Helpers
+        // -------------------------
+
+        private static Bitmap CreateDestinationBitmap(
+            Bitmap src,
+            int targetWidth,
+            int targetHeight)
+        {
+            var dst = new Bitmap(targetWidth, targetHeight, src.PixelFormat);
+
+            // Normalize DPI to screen pixels
+            dst.SetResolution(96f, 96f);
+
+            return dst;
+        }
+
+        private static void ConfigureGraphics(
+            Graphics g,
+            float scaleX,
+            float scaleY)
+        {
+            g.SmoothingMode = SmoothingMode.None;
+
+            if (IsDownscale(scaleX, scaleY))
+            {
+                ConfigureForDownscale(g);
+            }
+            else if (IsIntegerUpscale(scaleX, scaleY))
+            {
+                ConfigureForIntegerUpscale(g);
+            }
+            else
+            {
+                ConfigureForFractionalUpscale(g);
+            }
+        }
+
+        private static void ConfigureForDownscale(Graphics g)
+        {
+            g.InterpolationMode = InterpolationMode.HighQualityBilinear;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+        }
+
+        private static void ConfigureForIntegerUpscale(Graphics g)
+        {
+            g.InterpolationMode = InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = PixelOffsetMode.Half;
+        }
+
+        private static void ConfigureForFractionalUpscale(Graphics g)
+        {
+            g.InterpolationMode = InterpolationMode.Bilinear;
+            g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+        }
+
+        private static bool IsDownscale(float scaleX, float scaleY)
+            => scaleX < 1.0f || scaleY < 1.0f;
+
+        private static bool IsIntegerUpscale(float scaleX, float scaleY)
+            => scaleX >= 1.0f &&
+               NearlyInteger(scaleX) &&
+               NearlyInteger(scaleY);
+
+        private static bool NearlyInteger(float value)
+            => MathF.Abs(value - MathF.Round(value)) < 0.001f;
+
+        private static void DrawScaled(
+            Graphics g,
+            Bitmap src,
+            int targetWidth,
+            int targetHeight)
+        {
+            g.DrawImage(
+                src,
+                new Rectangle(0, 0, targetWidth, targetHeight),
+                new Rectangle(0, 0, src.Width, src.Height),
+                GraphicsUnit.Pixel);
+        }
+    }
 }
-
-
-

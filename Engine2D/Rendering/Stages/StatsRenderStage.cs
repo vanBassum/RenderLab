@@ -1,29 +1,45 @@
 using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
 using System.Diagnostics;
+using System.Drawing;
 using System.Numerics;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Engine2D.Rendering.Stages
 {
-    public sealed class FpsCounterStage : IRenderer2D
+    public sealed class StatsRenderStage : IRenderer2D
     {
         private readonly Stopwatch _stopwatch = Stopwatch.StartNew();
         private int _frameCount;
         private double _fps;
         private long _lastTimestamp;
 
+        private Vector2 _cursor = new(6, 6);
+        private readonly Vector2 _boxSize = new(140, 20);
+
         public void Render(in RenderContext2D context)
         {
             Measure();
 
-            var text = $"FPS: {_fps:F1}";
+            _cursor = new Vector2(6, 6);
 
-            // Background box
-            var position = new Vector2(6, 6);
-            var size = new Vector2(90, 24);
+            DrawStatistic(context, $"FPS:  {_fps:F1}");
+            DrawStatistic(context, $"ZOOM: {context.Camera.Zoom:F2}");
+        }
 
-            context.Graphics.FillRect(position, size, new ColorRgba(0, 0, 0, 160));
-            context.Graphics.DrawText(position + new Vector2(6, 4), text, ColorRgba.Lime);
+        private void DrawStatistic(in RenderContext2D context, string text)
+        {
+            context.Graphics.FillRect(
+                _cursor,
+                _boxSize,
+                new ColorRgba(0, 0, 0, 160));
+
+            context.Graphics.DrawText(
+                _cursor + new Vector2(6, 4),
+                text,
+                ColorRgba.Lime);
+
+            _cursor.Y += _boxSize.Y + 4;
         }
 
         private void Measure()

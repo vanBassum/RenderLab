@@ -36,8 +36,8 @@ namespace Engine2D.Rendering.Stages
 
         private static void RenderLine(Line2D line, in RenderContext2D context)
         {
-            var a = context.Camera.WorldToScreen(line.Start);
-            var b = context.Camera.WorldToScreen(line.End);
+            var a = context.Viewport.WorldToScreen(line.Start, context.Camera);
+            var b = context.Viewport.WorldToScreen(line.End, context.Camera);
 
             context.Graphics.DrawLine(a, b, ColorRgba.Lime, 1f);
         }

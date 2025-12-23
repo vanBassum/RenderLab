@@ -6,7 +6,7 @@ public interface ITileGridProvider
     // This thing is supplied with a camera and a viewport size.
     // This is the only place where the power of 2 conversion is done.
 
-    IEnumerable<TileRenderItem> GetTiles(Vector2 worldMin, Vector2 worldMax);
+    IEnumerable<TileRenderItem> GetTiles(Vector2 worldMin, Vector2 worldMax, float zoom);
 }
 
 
