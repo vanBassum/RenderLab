@@ -1,6 +1,6 @@
 using Engine2D.Tiles.Abstractions;
-using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 
 namespace RenderLab.Targets.WinForms
 {
@@ -21,8 +21,8 @@ namespace RenderLab.Targets.WinForms
 
             using (var g = Graphics.FromImage(dst))
             {
+                g.Clear(Color.Transparent);
                 ConfigureGraphics(g, scaleX, scaleY);
-
                 DrawScaled(g, src, targetWidth, targetHeight);
             }
 
@@ -33,23 +33,14 @@ namespace RenderLab.Targets.WinForms
         // Helpers
         // -------------------------
 
-        private static Bitmap CreateDestinationBitmap(
-            Bitmap src,
-            int targetWidth,
-            int targetHeight)
+        private static Bitmap CreateDestinationBitmap(Bitmap src, int targetWidth, int targetHeight)
         {
             var dst = new Bitmap(targetWidth, targetHeight, src.PixelFormat);
-
-            // Normalize DPI to screen pixels
             dst.SetResolution(96f, 96f);
-
             return dst;
         }
 
-        private static void ConfigureGraphics(
-            Graphics g,
-            float scaleX,
-            float scaleY)
+        private static void ConfigureGraphics(Graphics g, float scaleX, float scaleY)
         {
             g.SmoothingMode = SmoothingMode.None;
 
@@ -96,17 +87,21 @@ namespace RenderLab.Targets.WinForms
         private static bool NearlyInteger(float value)
             => MathF.Abs(value - MathF.Round(value)) < 0.001f;
 
-        private static void DrawScaled(
-            Graphics g,
-            Bitmap src,
-            int targetWidth,
-            int targetHeight)
+        private static void DrawScaled(Graphics g, Bitmap src, int targetWidth, int targetHeight)
         {
+            using var attrs = new ImageAttributes();
+
+            attrs.SetWrapMode(WrapMode.TileFlipXY);
+
             g.DrawImage(
                 src,
                 new Rectangle(0, 0, targetWidth, targetHeight),
-                new Rectangle(0, 0, src.Width, src.Height),
-                GraphicsUnit.Pixel);
+                0,
+                0,
+                src.Width,
+                src.Height,
+                GraphicsUnit.Pixel,
+                attrs);
         }
     }
 }

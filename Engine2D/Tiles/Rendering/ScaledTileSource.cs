@@ -16,24 +16,20 @@ namespace Engine2D.Tiles.Rendering
             _scaler = scaler;
         }
 
-        public ITileImage? GetTile(TileKey tileKey, Vector2 screenSize)
+        public ITileImage? GetTile(TileKey tileKey, int screenSize)
         {
             var baseTile = _source.GetTile(tileKey);
             if (baseTile == null)
                 return null;
 
-            int targetWidth = (int)MathF.Round(screenSize.X);
-            int targetHeight = (int)MathF.Round(screenSize.Y);
-
             // No scaling needed → return original
-            if (targetWidth == tileKey.PixelSize &&
-                targetHeight == tileKey.PixelSize)
+            if (screenSize == tileKey.PixelSize)
             {
                 return baseTile;
             }
 
             // Scaling needed → delegate
-            return _scaler.Scale(baseTile, targetWidth, targetHeight);
+            return _scaler.Scale(baseTile, screenSize, screenSize);
         }
     }
 

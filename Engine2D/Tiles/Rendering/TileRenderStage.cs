@@ -32,8 +32,10 @@ namespace Engine2D.Tiles.Rendering
         {
             var screenPos = context.Viewport.WorldToScreen(tileRenderItem.WorldPosition, context.Camera);
             var screenSize = tileRenderItem.WorldSize * context.Camera.Zoom;
+            int tileSize = (int)MathF.Round(screenSize.X);
 
-            var tileImage = _tileSource.GetTile(tileRenderItem.TileKey, screenSize);
+
+            var tileImage = _tileSource.GetTile(tileRenderItem.TileKey, tileSize);
             if (tileImage == null)
                 return;
 

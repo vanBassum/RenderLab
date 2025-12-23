@@ -32,7 +32,7 @@ namespace RenderLab
         private void Form1_Load(object sender, EventArgs e)
         {
             // -----------------------
-            // World data (engine)
+            // World data
             // -----------------------
             _primitives = new List<IPrimitive2D>
             {
@@ -41,15 +41,13 @@ namespace RenderLab
                 new Line2D(new Vector2(-150, -150), new Vector2(150, 150)),
             };
 
-
             // -----------------------
-            // Viewports (engine)
+            // Viewports
             // -----------------------
             _viewports.Add(CreateViewPortHost(pictureBox1));
-            _viewports.Add(CreateViewPortHost(pictureBox2));
 
             // -----------------------
-            // Tile system (engine)
+            // Tile system
             // -----------------------
             var httpTileSource = new HttpTileSource(TileUrlTemplate);
             var diskCache = new WinFormsTileSourceDiskCache(httpTileSource, TileCacheFolder);
@@ -59,7 +57,7 @@ namespace RenderLab
             var scaledMemoryCache = new ScaledTileSourceMemoryCache(scaler, 200);
 
             // -----------------------
-            // Render pipeline (engine)
+            // Render pipeline
             // -----------------------
             _pipeline = new RenderPipeline2D();
             _pipeline.AddStage(new ClearStage(ColorRgba.Black));
@@ -84,7 +82,6 @@ namespace RenderLab
                     return;
 
                 _frameTimer.Restart();
-
             }
 
             RenderFrame();

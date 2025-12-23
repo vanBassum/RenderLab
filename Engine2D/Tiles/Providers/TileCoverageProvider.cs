@@ -5,14 +5,10 @@ namespace Engine2D.Tiles.Providers
 {
     public sealed class TileCoverageProvider
     {
-        public void GetWorldCoverage(
-            Camera2D camera,
-            IViewport2D viewport,
-            out Vector2 worldMin,
-            out Vector2 worldMax)
+        public void GetWorldCoverage(Camera2D camera, IViewport2D viewport, out Vector2 worldMin, out Vector2 worldMax)
         {
             // Corner sampling using the viewport’s inverse transform.
-            var a = viewport.ScreenToWorld(Vector2.Zero, camera);
+            var a = viewport.ScreenToWorld(ScreenVector.Zero, camera);
             var b = viewport.ScreenToWorld(viewport.ScreenSize, camera);
 
             worldMin = new Vector2(MathF.Min(a.X, b.X), MathF.Min(a.Y, b.Y));

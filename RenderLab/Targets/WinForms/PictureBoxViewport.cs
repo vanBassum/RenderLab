@@ -68,8 +68,8 @@ namespace RenderLab.Targets.WinForms
             _pictureBox.Invalidate();
         }
 
-        private Vector2 GetClientSize()
-            => new Vector2(
+        private ScreenVector GetClientSize()
+            => new ScreenVector(
                 _pictureBox.ClientSize.Width,
                 _pictureBox.ClientSize.Height
             );

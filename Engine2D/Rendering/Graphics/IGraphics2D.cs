@@ -1,3 +1,4 @@
+using Engine2D.Rendering.Camera;
 using Engine2D.Tiles.Abstractions;
 using System.Numerics;
 
@@ -10,11 +11,11 @@ namespace Engine2D.Rendering.Graphics
     public interface IGraphics2D
     {
         void Clear(ColorRgba color);
-        void DrawLine(Vector2 a, Vector2 b, ColorRgba color, float thickness = 1.0f);
-        void DrawText(Vector2 position, string text, ColorRgba color);
-        void DrawImage(ITileImage image, Vector2 topLeft);
-        void DrawImage(ITileImage image, Vector2 topLeft, Vector2 size);
-        void FillRect(Vector2 position, Vector2 size, ColorRgba color);
-        void DrawRect(Vector2 screenPos, Vector2 screenSize, ColorRgba red);
+        void DrawLine(ScreenVector a, ScreenVector b, ColorRgba color, float thickness = 1.0f);
+        void DrawText(ScreenVector position, string text, ColorRgba color);
+        void DrawImage(ITileImage image, ScreenVector topLeft);
+        void DrawImage(ITileImage image, ScreenVector topLeft, ScreenVector size);
+        void FillRect(ScreenVector position, ScreenVector size, ColorRgba color);
+        void DrawRect(ScreenVector screenPos, ScreenVector screenSize, ColorRgba red);
     }
 }

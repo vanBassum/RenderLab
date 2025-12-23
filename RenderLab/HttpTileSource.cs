@@ -70,7 +70,8 @@ namespace RenderLab
             {
                 using var response = await _httpClient.GetAsync(
                     url,
-                    HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                    HttpCompletionOption.ResponseHeadersRead)
+                    .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                     return null;
@@ -79,15 +80,33 @@ namespace RenderLab
                     .ReadAsStreamAsync()
                     .ConfigureAwait(false);
 
-                var bitmap = new Bitmap(stream);
-                bitmap.SetResolution(96f, 96f);
-                return new WinFormsTileImage(bitmap);
+                using var src = new Bitmap(stream);
+
+                src.SetResolution(96f, 96f);
+
+                // 🔒 Normalize to alpha-safe bitmap
+                var dst = new Bitmap(
+                    src.Width,
+                    src.Height,
+                    System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+
+                using (var g = Graphics.FromImage(dst))
+                {
+                    g.Clear(Color.Transparent);
+                    g.DrawImageUnscaled(src, 0, 0);
+                }
+
+                dst.SetResolution(96f, 96f);
+
+                return new WinFormsTileImage(dst);
             }
             catch
             {
                 return null;
             }
         }
+
 
         private void MarkFailed(string url, string reason)
         {

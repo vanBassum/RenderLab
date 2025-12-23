@@ -9,9 +9,7 @@ namespace Engine2D.Tiles.Caching
         private readonly ITileSource _inner;
         private readonly string _rootDirectory;
 
-        public WinFormsTileSourceDiskCache(
-            ITileSource inner,
-            string rootDirectory)
+        public WinFormsTileSourceDiskCache(ITileSource inner, string rootDirectory)
         {
             _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             _rootDirectory = rootDirectory ?? throw new ArgumentNullException(nameof(rootDirectory));
@@ -19,10 +17,8 @@ namespace Engine2D.Tiles.Caching
             Directory.CreateDirectory(_rootDirectory);
         }
 
-
         public ITileImage? GetTile(TileKey tileKey)
         {
-
             var path = GetTilePath(tileKey.X, tileKey.Y, tileKey.Z);
 
             if (File.Exists(path))
@@ -46,10 +42,7 @@ namespace Engine2D.Tiles.Caching
         private string GetTilePath(int x, int y, int z)
         {
             // /root/z/x_y.png
-            return Path.Combine(
-                _rootDirectory,
-                z.ToString(),
-                $"{x}_{y}.png");
+            return Path.Combine(_rootDirectory, z.ToString(), $"{x}_{y}.png");
         }
 
         private static void SaveTile(ITileImage tile, string path)

@@ -17,9 +17,9 @@ namespace Engine2D.Tiles.Caching
             });
         }
 
-        public ITileImage? GetTile(TileKey tileKey, Vector2 screenSize)
+        public ITileImage? GetTile(TileKey tileKey, int screenSize)
         {
-            var key = tileKey.ToString() + screenSize.X.ToString();
+            var key = tileKey.ToString() + screenSize.ToString();
 
             if (_cache.TryGet(key, out var cached))
                 return cached;

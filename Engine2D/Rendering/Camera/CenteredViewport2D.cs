@@ -4,26 +4,41 @@ namespace Engine2D.Rendering.Camera
 {
     public sealed class CenteredViewport2D : IViewport2D
     {
-        public Vector2 ScreenSize { get; }
+        public ScreenVector ScreenSize { get; }
 
-        public CenteredViewport2D(Vector2 screenSize)
+        public CenteredViewport2D(ScreenVector screenSize)
         {
             ScreenSize = screenSize;
         }
 
-        public Vector2 WorldToScreen(Vector2 world, Camera2D camera)
+        public ScreenVector WorldToScreen(Vector2 world, Camera2D camera)
         {
             Vector2 relative = world - camera.Position;
             Vector2 scaled = relative * camera.Zoom;
 
-            return scaled + ScreenSize * 0.5f;
+            float x = scaled.X + ScreenSize.X * 0.5f;
+            float y = scaled.Y + ScreenSize.Y * 0.5f;
+
+            return new ScreenVector(
+                (int)MathF.Round(x),
+                (int)MathF.Round(y));
         }
 
-        public Vector2 ScreenToWorld(Vector2 screen, Camera2D camera)
+
+        public Vector2 ScreenToWorld(ScreenVector screen, Camera2D camera)
         {
-            Vector2 centered = screen - ScreenSize * 0.5f;
-            Vector2 unscaled = centered / camera.Zoom;
-            return unscaled + camera.Position;
+            // 1. Convert screen pixel to centered pixel space (still integer)
+            ScreenVector halfScreen = ScreenSize / 2;
+            ScreenVector centered = screen - halfScreen;
+
+            // 2. Convert to float world units
+            Vector2 worldOffset = new Vector2(
+                centered.X / camera.Zoom,
+                centered.Y / camera.Zoom);
+
+            // 3. Translate by camera position
+            return worldOffset + camera.Position;
         }
+
     }
 }
