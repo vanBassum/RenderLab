@@ -1,4 +1,4 @@
-namespace Engine2D.Rendering.Camera
+namespace Engine2D.Calc
 {
     public struct ScreenVector
     {

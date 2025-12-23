@@ -1,4 +1,4 @@
-using System.Numerics;
+using Engine2D.Calc;
 
 namespace Engine2D.Input
 {
@@ -6,15 +6,11 @@ namespace Engine2D.Input
     {
         public InputActionType Type { get; }
 
-        public Vector2 Position { get; }      // Screen-space
-        public Vector2 Delta { get; }         // Movement or scroll
+        public WorldVector Position { get; }      // Screen-space
+        public WorldVector Delta { get; }         // Movement or scroll
         public InputKey Key { get; }
 
-        private InputAction(
-            InputActionType type,
-            Vector2 position,
-            Vector2 delta,
-            InputKey key)
+        private InputAction(InputActionType type, WorldVector position, WorldVector delta, InputKey key)
         {
             Type = type;
             Position = position;
@@ -22,22 +18,22 @@ namespace Engine2D.Input
             Key = key;
         }
 
-        public static InputAction PointerDown(Vector2 position)
-            => new(InputActionType.PointerDown, position, Vector2.Zero, InputKey.None);
+        public static InputAction PointerDown(WorldVector position)
+            => new(InputActionType.PointerDown, position, WorldVector.Zero, InputKey.None);
 
-        public static InputAction PointerUp(Vector2 position)
-            => new(InputActionType.PointerUp, position, Vector2.Zero, InputKey.None);
+        public static InputAction PointerUp(WorldVector position)
+            => new(InputActionType.PointerUp, position, WorldVector.Zero, InputKey.None);
 
-        public static InputAction PointerMove(Vector2 position, Vector2 delta)
+        public static InputAction PointerMove(WorldVector position, WorldVector delta)
             => new(InputActionType.PointerMove, position, delta, InputKey.None);
 
-        public static InputAction Scroll(Vector2 position, float delta)
-            => new(InputActionType.Scroll, position, new Vector2(0, delta), InputKey.None);
+        public static InputAction Scroll(WorldVector position, float delta)
+            => new(InputActionType.Scroll, position, new WorldVector(0, delta), InputKey.None);
 
         public static InputAction KeyDown(InputKey key)
-            => new(InputActionType.KeyDown, Vector2.Zero, Vector2.Zero, key);
+            => new(InputActionType.KeyDown, WorldVector.Zero, WorldVector.Zero, key);
 
         public static InputAction KeyUp(InputKey key)
-            => new(InputActionType.KeyUp, Vector2.Zero, Vector2.Zero, key);
+            => new(InputActionType.KeyUp, WorldVector.Zero, WorldVector.Zero, key);
     }
 }

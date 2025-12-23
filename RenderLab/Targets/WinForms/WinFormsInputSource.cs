@@ -1,3 +1,4 @@
+using Engine2D.Calc;
 using Engine2D.Input;
 using System.Numerics;
 
@@ -8,7 +9,7 @@ namespace RenderLab.Targets.WinForms
         private readonly Control _control;
         private readonly InputQueue _queue;
 
-        private Vector2 _lastMousePos;
+        private WorldVector _lastMousePos;
 
         public WinFormsInputSource(Control control, InputQueue queue)
         {
@@ -27,29 +28,29 @@ namespace RenderLab.Targets.WinForms
 
         private void OnMouseDown(object? sender, MouseEventArgs e)
         {
-            _lastMousePos = new Vector2(e.X, e.Y);
+            _lastMousePos = new WorldVector(e.X, e.Y);
             _queue.Enqueue(InputAction.PointerDown(_lastMousePos));
         }
 
         private void OnMouseUp(object? sender, MouseEventArgs e)
         {
-            var pos = new Vector2(e.X, e.Y);
+            var pos = new WorldVector(e.X, e.Y);
             _queue.Enqueue(InputAction.PointerUp(pos));
         }
 
         private void OnMouseMove(object? sender, MouseEventArgs e)
         {
-            var pos = new Vector2(e.X, e.Y);
+            var pos = new WorldVector(e.X, e.Y);
             var delta = pos - _lastMousePos;
             _lastMousePos = pos;
 
-            if (delta != Vector2.Zero)
+            if (delta != WorldVector.Zero)
                 _queue.Enqueue(InputAction.PointerMove(pos, delta));
         }
 
         private void OnMouseWheel(object? sender, MouseEventArgs e)
         {
-            var pos = new Vector2(e.X, e.Y);
+            var pos = new WorldVector(e.X, e.Y);
             _queue.Enqueue(InputAction.Scroll(pos, e.Delta));
         }
 

@@ -1,4 +1,4 @@
-namespace Engine2D.Primitives
+namespace Engine2D.Primitives.Abstractions
 {
     // =========================
     // Primitives

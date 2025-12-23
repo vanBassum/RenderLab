@@ -1,6 +1,5 @@
 ﻿using Engine2D.Tiles.Abstractions;
 using System.Diagnostics;
-using System.Numerics;
 
 namespace Engine2D.Tiles.Caching
 {
@@ -33,12 +32,6 @@ namespace Engine2D.Tiles.Caching
             }
 
             return image;
-        }
-
-        private static Vector2 Quantize(Vector2 size)
-        {
-            // Avoid caching infinite variants due to float noise
-            return new Vector2(MathF.Round(size.X), MathF.Round(size.Y));
         }
     }
 }

@@ -1,5 +1,8 @@
+using Engine2D.Calc;
 using Engine2D.Input;
-using Engine2D.Primitives;
+using Engine2D.Primitives.Abstractions;
+using Engine2D.Primitives.Geometry;
+using Engine2D.Primitives.Stages;
 using Engine2D.Rendering.Camera;
 using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
@@ -8,7 +11,6 @@ using Engine2D.Tiles.Caching;
 using Engine2D.Tiles.Rendering;
 using RenderLab.Targets.WinForms;
 using System.Diagnostics;
-using System.Numerics;
 
 namespace RenderLab
 {
@@ -37,12 +39,7 @@ namespace RenderLab
             // -----------------------
             // World data
             // -----------------------
-            _primitives = new List<IPrimitive2D>
-            {
-                new Line2D(new Vector2(-100, 0), new Vector2(100, 0)),
-                new Line2D(new Vector2(0, -100), new Vector2(0, 100)),
-                new Line2D(new Vector2(-150, -150), new Vector2(150, 150)),
-            };
+            _primitives = GenerateSteeredPath(1000);
 
             // -----------------------
             // Viewports
@@ -77,7 +74,7 @@ namespace RenderLab
         private void OnIdle(object? sender, EventArgs e)
         {
             // Let it run, so i can count fps
-            if (true)
+            if (false)
             {
                 var elapsedMs = _frameTimer.Elapsed.TotalMilliseconds;
 
@@ -126,6 +123,85 @@ namespace RenderLab
                 CameraInput = cameraInput
             };
         }
+
+        private static List<IPrimitive2D> GenerateRandomLines(    int count,    float worldSize = 256f,    int? seed = 12345)
+        {
+            var rnd = seed.HasValue ? new Random(seed.Value) : new Random();
+            var list = new List<IPrimitive2D>(count);
+
+            float Half = worldSize * 0.5f;
+
+            for (int i = 0; i < count; i++)
+            {
+                var a = new WorldVector(
+                    (float)(rnd.NextDouble() * worldSize),
+                    (float)(rnd.NextDouble() * worldSize));
+
+                var b = new WorldVector(
+                    (float)(rnd.NextDouble() * worldSize),
+                    (float)(rnd.NextDouble() * worldSize));
+
+
+                list.Add(new Line2D(a, b));
+            }
+
+            return list;
+        }
+
+
+        private static List<IPrimitive2D> GenerateSteeredPath(
+    int segmentCount,
+    float worldSize = 256f,
+    float stepLength = 0.25f,     // small steps
+    float turnStrength = 0.15f,   // radians per step
+    int? seed = 12345)
+        {
+            var rnd = seed.HasValue ? new Random(seed.Value) : new Random();
+            var list = new List<IPrimitive2D>(segmentCount);
+
+            float half = worldSize * 0.5f;
+
+            // Start in the center of the world
+            var current = new WorldVector(half, half);
+
+            // Initial heading
+            float angle = (float)(rnd.NextDouble() * MathF.Tau);
+
+            for (int i = 0; i < segmentCount; i++)
+            {
+                // Random steering input [-1, +1]
+                float pull = (float)(rnd.NextDouble() * 2.0 - 1.0);
+
+                // Integrate angular velocity
+                angle += pull * turnStrength;
+
+                var direction = new WorldVector(
+                    MathF.Cos(angle),
+                    MathF.Sin(angle));
+
+                var next = current + direction * stepLength;
+
+                // Soft world bounds (Fallout-style invisible walls)
+                if (MathF.Abs(next.X) > half || MathF.Abs(next.Y) > half)
+                {
+                    // Turn back toward center instead of hard reflection
+                    var toCenter = WorldVector.Normalize(-current);
+                    angle = MathF.Atan2(toCenter.Y, toCenter.X);
+                    next = current + new WorldVector(
+                        MathF.Cos(angle),
+                        MathF.Sin(angle)) * stepLength;
+                }
+
+                list.Add(new Line2D(current, next));
+                current = next;
+            }
+
+            return list;
+        }
+
+
+
+
     }
 
     class ViewportHost

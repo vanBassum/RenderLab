@@ -1,4 +1,5 @@
-﻿using Engine2D.Tiles.Abstractions;
+﻿using Engine2D.Calc;
+using Engine2D.Tiles.Abstractions;
 using System.Numerics;
 
 namespace Engine2D.Tiles.Providers
@@ -14,7 +15,7 @@ namespace Engine2D.Tiles.Providers
             _tilePixelSize = tilePixelSize;
         }
 
-        public IEnumerable<TileRenderItem> GetTiles(Vector2 worldMin, Vector2 worldMax, float zoom)
+        public IEnumerable<TileRenderItem> GetTiles(WorldVector worldMin, WorldVector worldMax, float zoom)
         {
             // Discrete LOD selection (power-of-two zoom assumed)
             int z = Math.Max(0, (int)MathF.Ceiling(MathF.Log2(zoom)));
@@ -39,8 +40,8 @@ namespace Engine2D.Tiles.Providers
                             Z = z,
                             PixelSize = _tilePixelSize
                         },
-                        WorldPosition = new Vector2(x * tileWorldSize, y * tileWorldSize),
-                        WorldSize = new Vector2(tileWorldSize)
+                        WorldPosition = new WorldVector(x * tileWorldSize, y * tileWorldSize),
+                        WorldSize = new WorldVector(tileWorldSize, tileWorldSize)
                     };
                 }
             }

@@ -11,7 +11,6 @@ namespace Engine2D.Tiles.Rendering
     {
         private readonly IScaledTileSource _tileSource;
         private readonly TileGridProvider _gridProvider = new();
-        private readonly TileCoverageProvider _coverageProvider = new();
 
         public TileRenderStage(IScaledTileSource tileSource)
         {
@@ -20,7 +19,7 @@ namespace Engine2D.Tiles.Rendering
 
         public void Render(in RenderContext2D context)
         {
-            _coverageProvider.GetWorldCoverage(context.Camera, context.Viewport, out var worldMin, out var worldMax);
+            context.Viewport.GetWorldCoverage(context.Camera, out var worldMin, out var worldMax);
 
             foreach (var tile in _gridProvider.GetTiles(worldMin, worldMax, context.Camera.Zoom))
             {
