@@ -5,7 +5,7 @@ namespace Engine2D.Rendering.Camera
 {
     public sealed class CenteredViewport2D : IViewport2D
     {
-        public ScreenVector ScreenSize { get; }
+        public ScreenVector ScreenSize { get; set; }
 
         public CenteredViewport2D(ScreenVector screenSize)
         {

@@ -13,7 +13,7 @@ namespace RenderLab.Targets.WinForms
 
 
         public Camera2D Camera { get; }
-        public IViewport2D Viewport { get; private set; } = null!;
+        public CenteredViewport2D Viewport { get; private set; } = null!;
 
         public PictureBoxRenderHost(PictureBox pictureBox, RenderPipeline2D pipeline, Camera2D camera)
         {
@@ -25,6 +25,8 @@ namespace RenderLab.Targets.WinForms
 
             _pictureBox.Paint += OnPaint;
             _pictureBox.Resize += (_, _) => UpdateViewport();
+
+            Viewport = new CenteredViewport2D(new ScreenVector(_pictureBox.ClientSize.Width, _pictureBox.ClientSize.Height));
 
             UpdateViewport();
         }
@@ -44,7 +46,7 @@ namespace RenderLab.Targets.WinForms
             if (_pictureBox.ClientSize.Width <= 0 || _pictureBox.ClientSize.Height <= 0)
                 return;
 
-            Viewport = new CenteredViewport2D(new ScreenVector(_pictureBox.ClientSize.Width, _pictureBox.ClientSize.Height));
+            Viewport.ScreenSize = new ScreenVector(_pictureBox.ClientSize.Width, _pictureBox.ClientSize.Height);
         }
 
         private void OnPaint(object? sender, PaintEventArgs e)

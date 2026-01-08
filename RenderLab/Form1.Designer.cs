@@ -38,7 +38,7 @@
             pictureBox1.BorderStyle = BorderStyle.FixedSingle;
             pictureBox1.Location = new Point(12, 12);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(776, 426);
+            pictureBox1.Size = new Size(991, 494);
             pictureBox1.TabIndex = 0;
             pictureBox1.TabStop = false;
             // 
@@ -46,7 +46,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1015, 518);
             Controls.Add(pictureBox1);
             Name = "Form1";
             Text = "Form1";

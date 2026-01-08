@@ -20,7 +20,7 @@ namespace RenderLab
     {
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
         private readonly List<ViewportHost> _viewports = new();
-        private readonly float FpsLimit = -1; // Unlimited FPS
+        private readonly float FpsLimit = 60; // Unlimited FPS
         private float _fpsTimeAccum;
         private int _fpsFrameCount;
         private float fps;
@@ -52,10 +52,14 @@ namespace RenderLab
                 Level0WorldSize = 256f,
                 Origin = new WorldVector(0, 0)
             };
+            var tileScaler = new WinFormsTileImageScaler();
+            var tileResampler = new WinFormsTileResampler(tileScaler);
+
+
             var httpTileSource = new HttpWebpTileProvider(TileUrlTemplate, 16);
             var diskTileCache = new TileDiskCache(httpTileSource, TileCacheFolder);
-            var tileScaler = new WinFormsTileImageScaler();
-            var scaleStage = new TileProviderScaler(diskTileCache, tileScaler);
+            var lodFallback = new TileProviderLodFallback(diskTileCache, tileResampler, tileSpec);
+            var scaleStage = new TileProviderScaler(lodFallback, tileScaler);
             var memoryTileCache = new TileMemoryCache(scaleStage, 256);
 
             // -----------------------
@@ -70,7 +74,9 @@ namespace RenderLab
             // -----------------------
             // Viewports
             // -----------------------
-            _viewports.Add(CreateViewPortHost(pictureBox1, pipeline));
+            var mainViewport = CreateViewPortHost(pictureBox1, pipeline);
+            _viewports.Add(mainViewport);
+
 
             // -----------------------
             // Drive frames
@@ -138,9 +144,9 @@ namespace RenderLab
         {
             var camera = new Camera2D();
             var input = new InputQueue();
-            var cameraInput = new CameraPanZoomHandler(camera, 1, 32);
             var renderHost = new PictureBoxRenderHost(pictureBox, pipeLine, camera);
             var inputSource = new WinFormsInputSource(pictureBox, input);
+            var cameraInput = new CameraPanZoomHandler(camera, renderHost.Viewport, 1, 128);
 
             return new ViewportHost
             {

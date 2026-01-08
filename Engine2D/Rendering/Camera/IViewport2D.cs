@@ -5,7 +5,7 @@ namespace Engine2D.Rendering.Camera
 {
     public interface IViewport2D
     {
-        ScreenVector ScreenSize { get; }
+       ScreenVector ScreenSize { get; }
         ScreenVector WorldToScreen(WorldVector world, Camera2D camera);
         WorldVector ScreenToWorld(ScreenVector screen, Camera2D camera);
 

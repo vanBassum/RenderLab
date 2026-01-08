@@ -24,21 +24,17 @@ namespace Engine2D.Tiles.Caching
         {
             var key = TileCacheKey.FromQuery(query);
 
-            if (_cache.TryGet(key, out var cached))
-            {
-                return new TileFetchResult { Image = cached };
-            }
+            if (_cache.TryGet(key, out var image))
+                return new TileFetchResult { Image = image, IsProvisional = false };
 
             var result = await _inner.FetchAsync(query, token).ConfigureAwait(false);
 
-            // Do not cache null results (in-flight / miss / failure).
-            if (result.Image is not null)
-            {
+            if (result.Image is not null && !result.IsProvisional)
                 _cache.Add(key, result.Image);
-            }
 
             return result;
         }
+
     }
 
 
