@@ -8,6 +8,7 @@ using Engine2D.Rendering.Camera;
 using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
 using Engine2D.Rendering.Stages;
+using Engine2D.Tiles.Abstractions;
 using Engine2D.Tiles.Caching;
 using Engine2D.Tiles.Rendering;
 using RenderLab.Targets.WinForms;
@@ -45,19 +46,24 @@ namespace RenderLab
             // -----------------------
             // Tile system
             // -----------------------
-            var httpTileSource = new HttpWebpTileSource(TileUrlTemplate, 16);
-            var diskCache = new WinFormsTileSourceDiskCache(httpTileSource, TileCacheFolder);
-            //var memoryCache = new TileSourceMemoryCache(diskCache, 100);
+            var tileSpec = new TilePyramidSpec
+            {
+                TilePixelSize = 256,
+                Level0WorldSize = 256f,
+                Origin = new WorldVector(0, 0)
+            };
+            var httpTileSource = new HttpWebpTileProvider(TileUrlTemplate, 16);
+            var diskTileCache = new TileDiskCache(httpTileSource, TileCacheFolder);
             var tileScaler = new WinFormsTileImageScaler();
-            var scaler = new ScaledTileSource(diskCache, tileScaler);
-            var scaledMemoryCache = new ScaledTileSourceMemoryCache(scaler, 200);
+            var scaleStage = new TileProviderScaler(diskTileCache, tileScaler);
+            var memoryTileCache = new TileMemoryCache(scaleStage, 256);
 
             // -----------------------
             // Render pipeline
             // -----------------------
             var pipeline = new RenderPipeline2D();
             pipeline.AddStage(new ClearStage(ColorRgba.Black));
-            pipeline.AddStage(new TileRenderStage(scaledMemoryCache));
+            pipeline.AddStage(new TileRenderStage(memoryTileCache, tileSpec));
             pipeline.AddStage(new PrimitiveRenderStage(() => primitives));
             pipeline.AddStage(new HudRenderStage(DrawHud));
 

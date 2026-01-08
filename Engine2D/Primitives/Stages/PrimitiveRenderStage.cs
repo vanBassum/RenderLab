@@ -21,7 +21,8 @@ namespace Engine2D.Primitives.Stages
 
         public void Render(in RenderContext2D context)
         {
-            context.Viewport.GetWorldCoverage(context.Camera, out var worldMin, out var worldMax);
+            var worldMin = context.Viewport.GetWorldMin(context.Camera);
+            var worldMax = context.Viewport.GetWorldMax(context.Camera);
 
             foreach (var primitive in GetVisiblePrimitives(_getPrimitives(), context.Camera, context.Viewport, worldMin, worldMax))
             {

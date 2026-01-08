@@ -1,12 +1,11 @@
-﻿using System.Security.Cryptography.X509Certificates;
-
-namespace Engine2D.Tiles.Abstractions
+﻿namespace Engine2D.Tiles.Abstractions
 {
-
     public interface ITileImage : IDisposable
     {
         int Width { get; }
         int Height { get; }
-
     }
+
 }
+
+

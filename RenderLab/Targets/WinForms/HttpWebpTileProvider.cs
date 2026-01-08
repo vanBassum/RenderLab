@@ -1,17 +1,16 @@
 ﻿using Engine2D.Tiles.Abstractions;
-using RenderLab.Targets.WinForms;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace RenderLab
+namespace RenderLab.Targets.WinForms
 {
-    public sealed class HttpWebpTileSource : ITileSource, IDisposable
+    public sealed class HttpWebpTileProvider : ITileProvider, IDisposable
     {
-        public int MinZ { get; } = 0;
-        public int MaxZ { get; } = 6;
+        public int MinTileLevel { get; } = 0;
+        public int MaxTileLevel { get; } = 6;
 
         private readonly string _urlTemplate;
         private readonly HttpClient _httpClient;
@@ -20,68 +19,81 @@ namespace RenderLab
         private readonly ConcurrentDictionary<string, byte> _failedUrls = new();
         private readonly ConcurrentDictionary<string, Task<ITileImage?>> _inFlight = new();
 
-        public HttpWebpTileSource(string urlTemplate, int maxConcurrentDownloads = 4, HttpClient? httpClient = null)
+        public HttpWebpTileProvider(string urlTemplate, int maxConcurrentDownloads = 4, HttpClient? httpClient = null)
         {
-            _urlTemplate = urlTemplate
-                ?? throw new ArgumentNullException(nameof(urlTemplate));
-
+            _urlTemplate = urlTemplate ?? throw new ArgumentNullException(nameof(urlTemplate));
             _httpClient = httpClient ?? new HttpClient();
             _downloadLimiter = new SemaphoreSlim(maxConcurrentDownloads);
         }
 
-        public ITileImage? GetTile(TileKey tileKey)
+        public ValueTask<TileFetchResult> FetchAsync(TileQuery query, CancellationToken token)
         {
-            if (tileKey.Z < MinZ || tileKey.Z > MaxZ)
-                return null;
+            var tile = query.Tile;
 
-            if (tileKey.X < 0 || tileKey.Y < 0)
-                return null;
+            // Validate tile coordinates / level
+            if (tile.TileLevel < MinTileLevel || tile.TileLevel > MaxTileLevel)
+                return ValueTask.FromResult(new TileFetchResult { Image = null });
 
-            var url = BuildUrl(tileKey.X, tileKey.Y, tileKey.Z);
+            if (tile.X < 0 || tile.Y < 0)
+                return ValueTask.FromResult(new TileFetchResult { Image = null });
+
+            // Optional: reject impossible indices for this level
+            int tilesPerAxis = 1 << tile.TileLevel;
+            if (tile.X >= tilesPerAxis || tile.Y >= tilesPerAxis)
+                return ValueTask.FromResult(new TileFetchResult { Image = null });
+
+            var url = BuildUrl(tile.X, tile.Y, tile.TileLevel);
 
             if (_failedUrls.ContainsKey(url))
-                return null;
+                return ValueTask.FromResult(new TileFetchResult { Image = null });
 
-            var task = _inFlight.GetOrAdd(url, _ => DownloadAsync(url));
+            // Start download if not already in-flight
+            var task = _inFlight.GetOrAdd(url, _ => DownloadAsync(url, token));
 
+            // Non-blocking: if not completed yet, return null image for now
             if (!task.IsCompleted)
-                return null;
+                return ValueTask.FromResult(new TileFetchResult { Image = null });
 
             _inFlight.TryRemove(url, out _);
 
-            if (task.IsFaulted || task.Result == null)
+            // Completed: check result
+            if (task.IsFaulted || task.Result is null)
             {
-                MarkFailed(
-                    url,
-                    task.Exception?.GetBaseException().Message ?? "404");
-                return null;
+                MarkFailed(url, task.Exception?.GetBaseException().Message ?? "Download failed / 404");
+                return ValueTask.FromResult(new TileFetchResult { Image = null });
             }
 
-            return task.Result;
+            return ValueTask.FromResult(new TileFetchResult { Image = task.Result });
         }
 
-        private async Task<ITileImage?> DownloadAsync(string url)
+        private async Task<ITileImage?> DownloadAsync(string url, CancellationToken token)
         {
-            await _downloadLimiter.WaitAsync().ConfigureAwait(false);
+            await _downloadLimiter.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 using var response = await _httpClient.GetAsync(
-                    url,
-                    HttpCompletionOption.ResponseHeadersRead)
+                        url,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        token)
                     .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                     return null;
 
                 await using var stream = await response.Content
-                    .ReadAsStreamAsync()
+                    .ReadAsStreamAsync(token)
                     .ConfigureAwait(false);
 
-                using var image = await SixLabors.ImageSharp.Image.LoadAsync<Rgba32>(stream)
+                using var image = await SixLabors.ImageSharp.Image.LoadAsync<Rgba32>(stream, token)
                     .ConfigureAwait(false);
 
                 var bitmap = ConvertToBitmap(image);
                 return new WinFormsTileImage(bitmap);
+            }
+            catch (OperationCanceledException)
+            {
+                // Don’t blacklist on cancellation; just treat as not available.
+                return null;
             }
             catch (Exception ex)
             {
@@ -94,17 +106,16 @@ namespace RenderLab
             }
         }
 
-        private static System.Drawing.Bitmap ConvertToBitmap(Image<Rgba32> image)
+        private static Bitmap ConvertToBitmap(Image<Rgba32> image)
         {
-            var bitmap = new System.Drawing.Bitmap(
+            var bitmap = new Bitmap(
                 image.Width,
                 image.Height,
                 System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
             bitmap.SetResolution(96f, 96f);
 
-            var rect = new System.Drawing.Rectangle(
-                0, 0, bitmap.Width, bitmap.Height);
+            var rect = new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height);
 
             var data = bitmap.LockBits(
                 rect,
@@ -120,6 +131,8 @@ namespace RenderLab
                         var srcRow = accessor.GetRowSpan(y);
                         var dstPtr = data.Scan0 + y * data.Stride;
 
+                        // Copy row to bitmap
+                        // (Keeping your original approach; can be optimized later to avoid ToArray per row.)
                         Marshal.Copy(
                             MemoryMarshal.AsBytes(srcRow).ToArray(),
                             0,
@@ -142,17 +155,18 @@ namespace RenderLab
             Debug.WriteLine($"HttpWebpTileSource: Blacklisted {url} ({reason})");
         }
 
-        private string BuildUrl(int x, int y, int z)
+        private string BuildUrl(int x, int y, int tileLevel)
         {
             return _urlTemplate
                 .Replace("{x}", x.ToString())
                 .Replace("{y}", y.ToString())
-                .Replace("{z}", z.ToString());
+                .Replace("{z}", tileLevel.ToString()); // keep template token {z}
         }
 
         public void Dispose()
         {
             _httpClient.Dispose();
+            _downloadLimiter.Dispose();
         }
     }
 }

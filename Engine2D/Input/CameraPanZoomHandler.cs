@@ -38,10 +38,18 @@ namespace Engine2D.Input
                         break;
 
                     case InputActionType.Scroll:
-                        StepZoom(action.Delta.Y > 0 ? +1 : -1);
+                        StepZoomSimple(action.Delta.Y > 0 ? +1 : -1);
                         break;
                 }
             }
+        }
+
+        private void StepZoomSimple(int delta)
+        {
+            float zoomFactor = delta > 0 ? 1.25f : 0.8f;
+            float newZoom = _camera.Zoom * zoomFactor;
+            newZoom = Math.Clamp(newZoom, MinZoom, MaxZoom);
+            _camera.Zoom = newZoom;
         }
 
         private void StepZoom(int delta)

@@ -2,8 +2,8 @@
 {
     public interface ITileScaler
     {
-        ITileImage Scale(            ITileImage source,            int targetWidth,            int targetHeight);
+        ITileImage Scale(ITileImage source, int targetWidth, int targetHeight);
     }
-
-
 }
+
+

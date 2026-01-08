@@ -9,18 +9,24 @@ namespace Engine2D.Rendering.Camera
         ScreenVector WorldToScreen(WorldVector world, Camera2D camera);
         WorldVector ScreenToWorld(ScreenVector screen, Camera2D camera);
 
-        public void GetWorldCoverage(Camera2D camera, out WorldVector worldMin, out WorldVector worldMax)
+        public WorldVector GetWorldMin(Camera2D camera)
         {
             var a = ScreenToWorld(ScreenVector.Zero, camera);
             var b = ScreenToWorld(ScreenSize, camera);
-
-            worldMin = new WorldVector(
+            return new WorldVector(
                 MathF.Min(a.X, b.X),
                 MathF.Min(a.Y, b.Y));
+        }
 
-            worldMax = new WorldVector(
+        public WorldVector GetWorldMax(Camera2D camera)
+        {
+            var a = ScreenToWorld(ScreenVector.Zero, camera);
+            var b = ScreenToWorld(ScreenSize, camera);
+            return new WorldVector(
                 MathF.Max(a.X, b.X),
                 MathF.Max(a.Y, b.Y));
         }
     }
 }
+
+
