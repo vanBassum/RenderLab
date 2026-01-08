@@ -45,7 +45,7 @@ namespace RenderLab
             // -----------------------
             // Tile system
             // -----------------------
-            var httpTileSource = new HttpWebpTileSource(TileUrlTemplate, 8);
+            var httpTileSource = new HttpWebpTileSource(TileUrlTemplate, 16);
             var diskCache = new WinFormsTileSourceDiskCache(httpTileSource, TileCacheFolder);
             //var memoryCache = new TileSourceMemoryCache(diskCache, 100);
             var tileScaler = new WinFormsTileImageScaler();
@@ -116,7 +116,7 @@ namespace RenderLab
 
 
 
-
+         
         private void RenderFrame()
         {
             foreach (var vp in _viewports)
@@ -149,11 +149,11 @@ namespace RenderLab
 
 
         private static List<IPrimitive2D> GenerateSteeredPath(
-    int segmentCount,
-    float worldSize = 256f,
-    float stepLength = 0.25f,     // small steps
-    float turnStrength = 0.15f,   // radians per step
-    int? seed = 12345)
+            int segmentCount,
+            float worldSize = 256f,
+            float stepLength = 0.25f,     // small steps
+            float turnStrength = 0.15f,   // radians per step
+            int? seed = 12345)
         {
             var rnd = seed.HasValue ? new Random(seed.Value) : new Random();
             var list = new List<IPrimitive2D>(segmentCount);

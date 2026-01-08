@@ -19,7 +19,7 @@ namespace Engine2D.Tiles.Providers
         {
             // Discrete LOD selection (power-of-two zoom assumed)
             int z = Math.Max(0, (int)MathF.Ceiling(MathF.Log2(zoom)));
-
+            //int z = Math.Max(0, (int)MathF.Floor(MathF.Log2(zoom)));
             float tileWorldSize = _baseTileWorldSize / (1 << z);
 
             int minX = (int)MathF.Floor(worldMin.X / tileWorldSize);
