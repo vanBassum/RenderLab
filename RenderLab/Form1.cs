@@ -20,10 +20,7 @@ namespace RenderLab
     {
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
         private readonly List<ViewportHost> _viewports = new();
-        private readonly float FpsLimit = 60; // Unlimited FPS
-        private float _fpsTimeAccum;
-        private int _fpsFrameCount;
-        private float fps;
+        private readonly GameLoop _gameLoop = new();
 
         //private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
         //private readonly string TileCacheFolder = "TileCache/gta5";
@@ -41,7 +38,7 @@ namespace RenderLab
             // -----------------------
             // World data
             // -----------------------
-            var primitives = GenerateSteeredPath(1000);
+            var primitives = new List<IPrimitive2D> ();
 
             // -----------------------
             // Tile system
@@ -81,55 +78,11 @@ namespace RenderLab
             // -----------------------
             // Drive frames
             // -----------------------
-            Application.Idle += OnIdle;
+            _gameLoop.RenderAsyncCallback = Render;
+            _ = _gameLoop.Start();
         }
 
-        private void DrawHud(HudDrawer hud)
-        {
-            int yPos = 0;
-            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"FPS: {(int)fps}");
-            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"Zoom: {hud.Context.Camera.Zoom}");
-        }
-
-        private void OnIdle(object? sender, EventArgs e)
-        {
-            float elapsed = (float)_frameTimer.Elapsed.TotalSeconds;
-            if (elapsed <= 0f)
-                return;
-
-            // Accumulate FPS stats
-            _fpsTimeAccum += elapsed;
-            _fpsFrameCount++;
-
-            // Update FPS every 500 ms
-            if (_fpsTimeAccum >= 0.5f)
-            {
-                fps = _fpsFrameCount / _fpsTimeAccum;
-                _fpsTimeAccum = 0f;
-                _fpsFrameCount = 0;
-            }
-
-            // Optional FPS limiting
-            if (FpsLimit > 0)
-            {
-                float targetFrameTime = 1f / FpsLimit;
-                if (elapsed < targetFrameTime)
-                {
-                    int sleepMs = (int)((targetFrameTime - elapsed) * 1000f);
-                    if (sleepMs > 0)
-                        Thread.Sleep(sleepMs);
-                    return;
-                }
-            }
-
-            _frameTimer.Restart();
-            RenderFrame();
-        }
-
-
-
-         
-        private void RenderFrame()
+        private async Task Render(GameLoopContext context)
         {
             foreach (var vp in _viewports)
             {
@@ -138,6 +91,14 @@ namespace RenderLab
                 vp.RenderHost.RequestRedraw();
             }
         }
+
+        private void DrawHud(HudDrawer hud)
+        {
+            int yPos = 0;
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"FPS:    {_gameLoop.AverageFrameRate}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"Zoom:   {hud.Context.Camera.Zoom}");
+        }
+         
 
 
         ViewportHost CreateViewPortHost(PictureBox pictureBox, RenderPipeline2D pipeLine)
@@ -155,64 +116,6 @@ namespace RenderLab
                 CameraInput = cameraInput
             };
         }
-
-
-
-
-
-        private static List<IPrimitive2D> GenerateSteeredPath(
-            int segmentCount,
-            float worldSize = 256f,
-            float stepLength = 0.25f,     // small steps
-            float turnStrength = 0.15f,   // radians per step
-            int? seed = 12345)
-        {
-            var rnd = seed.HasValue ? new Random(seed.Value) : new Random();
-            var list = new List<IPrimitive2D>(segmentCount);
-
-            float half = worldSize * 0.5f;
-
-            // Start in the center of the world
-            var current = new WorldVector(half, half);
-
-            // Initial heading
-            float angle = (float)(rnd.NextDouble() * MathF.Tau);
-
-            for (int i = 0; i < segmentCount; i++)
-            {
-                // Random steering input [-1, +1]
-                float pull = (float)(rnd.NextDouble() * 2.0 - 1.0);
-
-                // Integrate angular velocity
-                angle += pull * turnStrength;
-
-                var direction = new WorldVector(
-                    MathF.Cos(angle),
-                    MathF.Sin(angle));
-
-                var next = current + direction * stepLength;
-
-                // Soft world bounds (Fallout-style invisible walls)
-                if (MathF.Abs(next.X) > half || MathF.Abs(next.Y) > half)
-                {
-                    // Turn back toward center instead of hard reflection
-                    var toCenter = WorldVector.Normalize(-current);
-                    angle = MathF.Atan2(toCenter.Y, toCenter.X);
-                    next = current + new WorldVector(
-                        MathF.Cos(angle),
-                        MathF.Sin(angle)) * stepLength;
-                }
-
-                list.Add(new Line2D(current, next));
-                current = next;
-            }
-
-            return list;
-        }
-
-
-
-
     }
 
     class ViewportHost
@@ -221,9 +124,11 @@ namespace RenderLab
         public required InputQueue Input;
         public required CameraPanZoomHandler CameraInput;
     }
-
-
 }
+
+
+
+
 
 
 
