@@ -33,6 +33,7 @@ namespace RenderLab
         private readonly string TileUrlTemplate = "https://storage-cdn.wemod.com/maps/b1c977d8-59dc-4ff7-b0f0-63488f7bfcd6/tiles/{z}/{y}/{x}.webp";
         private readonly string TileCacheFolder = "Data/fallout4/Tiles";
         private readonly string RegressionDataFile = "Data/fallout4/regression_data.json";
+        private readonly string WaypointsDataFile = "Data/fallout4/waypoints_data.json";
 
 
         private readonly MemoryManager _memoryManager = new();
@@ -42,7 +43,9 @@ namespace RenderLab
 
         private ViewportHost? _mainViewport;
 
-        System.Numerics.Vector2 gamePosition = System.Numerics.Vector2.Zero;
+        Vector2 gamePosition = Vector2.Zero;
+
+        private List<Vector2> _playerWaypoints = new();
 
 
 
@@ -56,6 +59,13 @@ namespace RenderLab
             yield return _playerPrimitive;
             foreach (var anchor in _linearRegression.GetPoints())
                 yield return CreateAnchorPrimitive(anchor);
+
+            for (int i = 1; i < _playerWaypoints.Count; i++)
+            {
+                var start = _linearRegression.GameToMap(_playerWaypoints[i - 1]);
+                var end = _linearRegression.GameToMap(_playerWaypoints[i]);
+                yield return CreateWaypointLine(start, end);
+            }
         }
 
         IEnumerable<ViewportHost> GetAllViewPorts()
@@ -72,6 +82,12 @@ namespace RenderLab
 
             return new AnchorPrimitive(anchor.Map, calculatedMapPos);
         }
+
+        Line2D CreateWaypointLine(Vector2 start, Vector2 end)
+        {
+            return new Line2D(start, end);
+        }
+
 
 
         private void Form1_Load(object sender, EventArgs e)
@@ -118,6 +134,7 @@ namespace RenderLab
 
 
             LoadRegressionData();
+            LoadWaypoints();
         }
 
         private static readonly JsonSerializerOptions RegressionJsonOptions =
@@ -157,6 +174,28 @@ namespace RenderLab
             File.WriteAllText(RegressionDataFile, json);
         }
 
+        void LoadWaypoints()
+        {
+            if (!File.Exists(WaypointsDataFile))
+                return;
+            var json = File.ReadAllText(WaypointsDataFile);
+            var waypoints = JsonSerializer.Deserialize<List<Vector2>>(json, RegressionJsonOptions);
+            if (waypoints == null)
+                return;
+            _playerWaypoints = waypoints;
+        }
+
+        void SaveWaypoints()
+        {
+            var json = JsonSerializer.Serialize(_playerWaypoints, RegressionJsonOptions);
+            var directory = Path.GetDirectoryName(WaypointsDataFile);
+            if (string.IsNullOrEmpty(directory))
+                return;
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(WaypointsDataFile, json);
+        }   
+
+
         private async Task Update(GameLoopContext context)
         {
             if (!_memoryManager.IsAttached)
@@ -175,6 +214,22 @@ namespace RenderLab
 
             gamePosition = new System.Numerics.Vector2(xGame, yGame);
 
+            if(_playerWaypoints.Count == 0)
+            {
+                // No waypoints, just use current position
+                _playerWaypoints.Add(gamePosition);
+                SaveWaypoints();
+            }
+            else
+            {
+                var distance = Vector2.Distance(gamePosition, _playerWaypoints.Last());
+                if (distance >= 100f)
+                {
+                    _playerWaypoints.Add(gamePosition);
+                    SaveWaypoints();
+                }
+            }
+
             if (_linearRegression.HasModel)
             {
                 var mapPos = _linearRegression.GameToMap(gamePosition);
@@ -192,7 +247,6 @@ namespace RenderLab
                 vp.AnchorHandler.HandleInput(vp.Input);
                 vp.Input.Clear();
                 vp.RenderHost.RequestRedraw();
-
             }
         }
 
@@ -203,6 +257,8 @@ namespace RenderLab
             hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"Zoom:     {hud.Context.Camera.Zoom}");
             hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(200, 20), $"Attached: {_memoryManager.IsAttached}");
             hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(200, 20), $"Position: X={gamePosition.X:F2} Y={gamePosition.Y:F2}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(200, 20), $"Waypoints {_playerWaypoints.Count}");
+
         }
         
         ViewportHost CreateViewPortHost(PictureBox pictureBox, RenderPipeline2D pipeLine)
