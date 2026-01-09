@@ -1,4 +1,7 @@
-﻿namespace Engine2D.Tiles.Abstractions
+﻿using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Models;
+
+namespace Engine2D.Tiles.Providers
 {
     public sealed class TileProviderScaler : ITileProvider
     {

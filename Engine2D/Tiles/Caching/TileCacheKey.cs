@@ -1,4 +1,4 @@
-﻿using Engine2D.Tiles.Abstractions;
+﻿using Engine2D.Tiles.Models;
 using System.Diagnostics;
 using System.Numerics;
 

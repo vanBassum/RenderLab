@@ -1,6 +1,6 @@
 ﻿using Engine2D.Calc;
 
-namespace Engine2D.Tiles.Abstractions
+namespace Engine2D.Tiles.Models
 {
     public sealed record TilePyramidSpec
     {

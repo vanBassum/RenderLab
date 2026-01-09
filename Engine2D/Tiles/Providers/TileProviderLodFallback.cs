@@ -1,4 +1,7 @@
-﻿namespace Engine2D.Tiles.Abstractions
+﻿using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Models;
+
+namespace Engine2D.Tiles.Providers
 {
     public sealed class TileProviderLodFallback : ITileProvider
     {
@@ -49,8 +52,8 @@
                     continue; // still downloading/missing, try even lower
 
                 // Which child within the parent?
-                int ix = req.X & (factor - 1);
-                int iy = req.Y & (factor - 1);
+                int ix = req.X & factor - 1;
+                int iy = req.Y & factor - 1;
 
                 // Crop rect in parent image pixels
                 int srcW = parent.Image.Width / factor;

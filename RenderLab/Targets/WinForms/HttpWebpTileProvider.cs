@@ -1,4 +1,5 @@
 ﻿using Engine2D.Tiles.Abstractions;
+using Engine2D.Tiles.Models;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Collections.Concurrent;

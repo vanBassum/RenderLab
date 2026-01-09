@@ -8,8 +8,9 @@ using Engine2D.Rendering.Camera;
 using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
 using Engine2D.Rendering.Stages;
-using Engine2D.Tiles.Abstractions;
 using Engine2D.Tiles.Caching;
+using Engine2D.Tiles.Models;
+using Engine2D.Tiles.Providers;
 using Engine2D.Tiles.Rendering;
 using RenderLab.Targets.WinForms;
 using System.Diagnostics;
@@ -18,12 +19,8 @@ namespace RenderLab
 {
     public partial class Form1 : Form
     {
-        private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
+        private readonly GameLoop _loop = new() { FpsLimit = 120 };
         private readonly List<ViewportHost> _viewports = new();
-        private readonly float FpsLimit = 60; // Unlimited FPS
-        private float _fpsTimeAccum;
-        private int _fpsFrameCount;
-        private float fps;
 
         //private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
         //private readonly string TileCacheFolder = "TileCache/gta5";
@@ -55,7 +52,6 @@ namespace RenderLab
             var tileScaler = new WinFormsTileImageScaler();
             var tileResampler = new WinFormsTileResampler(tileScaler);
 
-
             var httpTileSource = new HttpWebpTileProvider(TileUrlTemplate, 16);
             var diskTileCache = new TileDiskCache(httpTileSource, TileCacheFolder);
             var lodFallback = new TileProviderLodFallback(diskTileCache, tileResampler, tileSpec);
@@ -77,58 +73,24 @@ namespace RenderLab
             var mainViewport = CreateViewPortHost(pictureBox1, pipeline);
             _viewports.Add(mainViewport);
 
-
             // -----------------------
             // Drive frames
             // -----------------------
-            Application.Idle += OnIdle;
+            _loop.Start(delta =>
+            {
+                RenderFrame();
+            });
+
         }
 
         private void DrawHud(HudDrawer hud)
         {
             int yPos = 0;
-            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"FPS: {(int)fps}");
-            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"Zoom: {hud.Context.Camera.Zoom}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(220, 20), $"FPS: {_loop.CurrentFps}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(220, 20), $"Load: {(_loop.AverageLoad * 100):0}%");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(220, 20), $"Zoom: {hud.Context.Camera.Zoom:0.00}");
         }
 
-        private void OnIdle(object? sender, EventArgs e)
-        {
-            float elapsed = (float)_frameTimer.Elapsed.TotalSeconds;
-            if (elapsed <= 0f)
-                return;
-
-            // Accumulate FPS stats
-            _fpsTimeAccum += elapsed;
-            _fpsFrameCount++;
-
-            // Update FPS every 500 ms
-            if (_fpsTimeAccum >= 0.5f)
-            {
-                fps = _fpsFrameCount / _fpsTimeAccum;
-                _fpsTimeAccum = 0f;
-                _fpsFrameCount = 0;
-            }
-
-            // Optional FPS limiting
-            if (FpsLimit > 0)
-            {
-                float targetFrameTime = 1f / FpsLimit;
-                if (elapsed < targetFrameTime)
-                {
-                    int sleepMs = (int)((targetFrameTime - elapsed) * 1000f);
-                    if (sleepMs > 0)
-                        Thread.Sleep(sleepMs);
-                    return;
-                }
-            }
-
-            _frameTimer.Restart();
-            RenderFrame();
-        }
-
-
-
-         
         private void RenderFrame()
         {
             foreach (var vp in _viewports)
@@ -155,10 +117,6 @@ namespace RenderLab
                 CameraInput = cameraInput
             };
         }
-
-
-
-
 
         private static List<IPrimitive2D> GenerateSteeredPath(
             int segmentCount,
@@ -215,15 +173,6 @@ namespace RenderLab
 
     }
 
-    class ViewportHost
-    {
-        public required PictureBoxRenderHost RenderHost;
-        public required InputQueue Input;
-        public required CameraPanZoomHandler CameraInput;
-    }
 
 
 }
-
-
-

@@ -1,4 +1,6 @@
-﻿namespace Engine2D.Tiles.Abstractions
+﻿using Engine2D.Tiles.Abstractions;
+
+namespace Engine2D.Tiles.Models
 {
     public sealed class TileFetchResult
     {
