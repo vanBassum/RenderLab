@@ -21,6 +21,12 @@ namespace RenderLab
             Recalculate();
         }
 
+        public void ClearPoints()
+        {
+            _points.Clear();
+            _hasModel = false;
+        }
+
         public Vector2 GameToMap(Vector2 g)
         {
             if (!_hasModel) return Vector2.Zero;

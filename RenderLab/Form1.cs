@@ -17,6 +17,7 @@ using RenderLab.Targets.WinForms;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace RenderLab
@@ -24,20 +25,22 @@ namespace RenderLab
     public partial class Form1 : Form
     {
         private readonly Stopwatch _frameTimer = Stopwatch.StartNew();
-        private readonly List<ViewportHost> _viewports = new();
         private readonly GameLoop _gameLoop = new();
 
         //private readonly string TileUrlTemplate = "https://gtamap.xyz/mapStyles/styleSatelite/{z}/{x}/{y}.jpg";
         //private readonly string TileCacheFolder = "TileCache/gta5";
 
         private readonly string TileUrlTemplate = "https://storage-cdn.wemod.com/maps/b1c977d8-59dc-4ff7-b0f0-63488f7bfcd6/tiles/{z}/{y}/{x}.webp";
-        private readonly string TileCacheFolder = "TileCache/fallout4";
+        private readonly string TileCacheFolder = "Data/fallout4/Tiles";
+        private readonly string RegressionDataFile = "Data/fallout4/regression_data.json";
 
 
         private readonly MemoryManager _memoryManager = new();
 
         private readonly PlayerPrimitive _playerPrimitive = new(new Vector2(0, 0));
         private readonly LinearRegression _linearRegression = new();
+
+        private ViewportHost? _mainViewport;
 
         System.Numerics.Vector2 gamePosition = System.Numerics.Vector2.Zero;
 
@@ -53,6 +56,12 @@ namespace RenderLab
             yield return _playerPrimitive;
             foreach (var anchor in _linearRegression.GetPoints())
                 yield return CreateAnchorPrimitive(anchor);
+        }
+
+        IEnumerable<ViewportHost> GetAllViewPorts()
+        {
+            if (_mainViewport != null)
+                yield return _mainViewport;
         }
 
         AnchorPrimitive CreateAnchorPrimitive(Anchor anchor)
@@ -98,9 +107,7 @@ namespace RenderLab
             // -----------------------
             // Viewports
             // -----------------------
-            var mainViewport = CreateViewPortHost(pictureBox1, pipeline);
-            _viewports.Add(mainViewport);
-
+            _mainViewport = CreateViewPortHost(pictureBox1, pipeline);
 
             // -----------------------
             // Drive frames
@@ -108,6 +115,46 @@ namespace RenderLab
             _gameLoop.RenderAsyncCallback = Render;
             _gameLoop.UpdateAsyncCallback = Update;
             _ = _gameLoop.Start();
+
+
+            LoadRegressionData();
+        }
+
+        private static readonly JsonSerializerOptions RegressionJsonOptions =
+            new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                IncludeFields = true, // only needed if Anchor uses fields instead of properties
+                Converters = { new Vector2JsonConverter() }
+            };
+
+
+        void LoadRegressionData()
+        {
+            if (!File.Exists(RegressionDataFile))
+                return;
+
+            var json = File.ReadAllText(RegressionDataFile);
+            var anchors = JsonSerializer.Deserialize<List<Anchor>>(json, RegressionJsonOptions);
+            if (anchors == null)
+                return;
+            
+            _linearRegression.ClearPoints();
+            foreach (var anchor in anchors)
+            {
+                _linearRegression.AddPoint(anchor);
+            }
+        }
+
+        void SaveRegressionData()
+        {
+            var anchors = _linearRegression.GetPoints().ToList();
+            var json = JsonSerializer.Serialize(anchors, RegressionJsonOptions);
+            var directory = Path.GetDirectoryName(RegressionDataFile);
+            if (string.IsNullOrEmpty(directory))
+                return;
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(RegressionDataFile, json);
         }
 
         private async Task Update(GameLoopContext context)
@@ -132,13 +179,14 @@ namespace RenderLab
             {
                 var mapPos = _linearRegression.GameToMap(gamePosition);
                 _playerPrimitive.Position = mapPos;
+                _mainViewport.RenderHost.Camera.Position = mapPos;
             }
         }
 
 
         private async Task Render(GameLoopContext context)
         {
-            foreach (var vp in _viewports)
+            foreach (var vp in GetAllViewPorts())
             {
                 vp.CameraInput.HandleInput(vp.Input);
                 vp.AnchorHandler.HandleInput(vp.Input);
@@ -175,6 +223,7 @@ namespace RenderLab
                 };
 
                 _linearRegression.AddPoint(anchor);
+                SaveRegressionData();
             });
 
             return new ViewportHost
