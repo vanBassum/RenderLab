@@ -6,23 +6,23 @@ namespace Engine2D.Rendering.Camera
     public interface IViewport2D
     {
        ScreenVector ScreenSize { get; }
-        ScreenVector WorldToScreen(WorldVector world, Camera2D camera);
-        WorldVector ScreenToWorld(ScreenVector screen, Camera2D camera);
+        ScreenVector WorldToScreen(Vector2 world, Camera2D camera);
+        Vector2 ScreenToWorld(ScreenVector screen, Camera2D camera);
 
-        public WorldVector GetWorldMin(Camera2D camera)
+        public Vector2 GetWorldMin(Camera2D camera)
         {
             var a = ScreenToWorld(ScreenVector.Zero, camera);
             var b = ScreenToWorld(ScreenSize, camera);
-            return new WorldVector(
+            return new Vector2(
                 MathF.Min(a.X, b.X),
                 MathF.Min(a.Y, b.Y));
         }
 
-        public WorldVector GetWorldMax(Camera2D camera)
+        public Vector2 GetWorldMax(Camera2D camera)
         {
             var a = ScreenToWorld(ScreenVector.Zero, camera);
             var b = ScreenToWorld(ScreenSize, camera);
-            return new WorldVector(
+            return new Vector2(
                 MathF.Max(a.X, b.X),
                 MathF.Max(a.Y, b.Y));
         }

@@ -35,12 +35,15 @@ namespace Engine2D.Input
                 switch (action.Type)
                 {
                     case InputActionType.PointerDown:
-                        _dragging = true;
+                        if (action.MouseButton == InputMouseButton.Left)
+                            _dragging = true;
                         break;
 
                     case InputActionType.PointerUp:
-                        _dragging = false;
+                        if (action.MouseButton == InputMouseButton.Left)
+                            _dragging = false;
                         break;
+
 
                     case InputActionType.PointerMove:
                         if (_dragging)

@@ -5,6 +5,7 @@ using Engine2D.Primitives.Geometry;
 using Engine2D.Rendering.Camera;
 using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
+using System.Numerics;
 
 namespace Engine2D.Primitives.Stages
 {
@@ -26,11 +27,11 @@ namespace Engine2D.Primitives.Stages
 
             foreach (var primitive in GetVisiblePrimitives(_getPrimitives(), context.Camera, context.Viewport, worldMin, worldMax))
             {
-                RenderPrimitive(primitive, context);
+                primitive.Render(context);
             }
         }
 
-        private IEnumerable<IPrimitive2D> GetVisiblePrimitives(IEnumerable<IPrimitive2D> all, Camera2D camera, IViewport2D viewport, WorldVector worldMin, WorldVector worldMax)
+        private IEnumerable<IPrimitive2D> GetVisiblePrimitives(IEnumerable<IPrimitive2D> all, Camera2D camera, IViewport2D viewport, Vector2 worldMin, Vector2 worldMax)
         {
             foreach (var primitive in all)
             {
@@ -40,28 +41,5 @@ namespace Engine2D.Primitives.Stages
                 }
             }
         }
-
-        private static void RenderPrimitive(IPrimitive2D primitive, in RenderContext2D context)
-        {
-            switch (primitive)
-            {
-                case Line2D line:
-                    RenderLine(line, context);
-                    break;
-
-                default:
-                    throw new NotSupportedException(
-                        $"Primitive {primitive.GetType().Name} not supported.");
-            }
-        }
-
-        private static void RenderLine(Line2D line, in RenderContext2D context)
-        {
-            var a = context.Viewport.WorldToScreen(line.Start, context.Camera);
-            var b = context.Viewport.WorldToScreen(line.End, context.Camera);
-
-            context.Graphics.DrawLine(a, b, ColorRgba.Lime, 1f);
-        }
     }
-
 }

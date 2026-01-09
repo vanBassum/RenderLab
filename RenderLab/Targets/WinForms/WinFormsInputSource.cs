@@ -1,6 +1,5 @@
 using Engine2D.Calc;
 using Engine2D.Input;
-using System.Numerics;
 
 namespace RenderLab.Targets.WinForms
 {
@@ -29,13 +28,13 @@ namespace RenderLab.Targets.WinForms
         private void OnMouseDown(object? sender, MouseEventArgs e)
         {
             _lastMousePos = new ScreenVector(e.X, e.Y);
-            _queue.Enqueue(InputAction.PointerDown(_lastMousePos));
+            _queue.Enqueue(InputAction.PointerDown(_lastMousePos, TranslateMouseButton(e.Button)));
         }
 
         private void OnMouseUp(object? sender, MouseEventArgs e)
         {
             var pos = new ScreenVector(e.X, e.Y);
-            _queue.Enqueue(InputAction.PointerUp(pos));
+            _queue.Enqueue(InputAction.PointerUp(pos, TranslateMouseButton(e.Button)));
         }
 
         private void OnMouseMove(object? sender, MouseEventArgs e)
@@ -66,6 +65,17 @@ namespace RenderLab.Targets.WinForms
             var key = TranslateKey(e.KeyCode);
             if (key != InputKey.None)
                 _queue.Enqueue(InputAction.KeyUp(key));
+        }
+
+        private static InputMouseButton TranslateMouseButton(MouseButtons btn)
+        {
+            return btn switch
+            {
+                MouseButtons.Left => InputMouseButton.Left,
+                MouseButtons.Right => InputMouseButton.Right,
+                MouseButtons.Middle => InputMouseButton.Middle,
+                _ => InputMouseButton.None
+            };
         }
 
         private static InputKey TranslateKey(Keys key)

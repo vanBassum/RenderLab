@@ -68,6 +68,13 @@ namespace RenderLab.Targets.WinForms
         }
 
         private static Color ToColor(ColorRgba c) => Color.FromArgb(c.A, c.R, c.G, c.B);
+
+        public void DrawCircle(ScreenVector center, float radius, ColorRgba color, float thickness = 1)
+        {
+            using var pen = new Pen(ToColor(color), thickness);
+            float diameter = radius * 2;
+            _graphics.DrawEllipse(pen, center.X - radius, center.Y - radius, diameter, diameter);
+        }
     }
 }
 

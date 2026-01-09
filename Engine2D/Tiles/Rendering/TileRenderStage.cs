@@ -3,6 +3,7 @@ using Engine2D.Rendering.Graphics;
 using Engine2D.Rendering.Pipeline;
 using Engine2D.Tiles.Abstractions;
 using Engine2D.Tiles.Models;
+using System.Numerics;
 
 namespace Engine2D.Tiles.Rendering
 {
@@ -50,11 +51,11 @@ namespace Engine2D.Tiles.Rendering
             var tileId = new TileId(tx, ty, tileLevel);
 
             // World-space top-left and bottom-right of this tile
-            var worldTopLeft = new WorldVector(
+            var worldTopLeft = new Vector2(
                 _spec.Origin.X + tx * tileWorldSize,
                 _spec.Origin.Y + ty * tileWorldSize);
 
-            var worldBottomRight = new WorldVector(
+            var worldBottomRight = new Vector2(
                 worldTopLeft.X + tileWorldSize,
                 worldTopLeft.Y + tileWorldSize);
 

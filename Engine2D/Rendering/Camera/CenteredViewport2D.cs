@@ -12,10 +12,10 @@ namespace Engine2D.Rendering.Camera
             ScreenSize = screenSize;
         }
 
-        public ScreenVector WorldToScreen(WorldVector world, Camera2D camera)
+        public ScreenVector WorldToScreen(Vector2 world, Camera2D camera)
         {
-            WorldVector relative = world - camera.Position;
-            WorldVector scaled = relative * camera.Zoom;
+            Vector2 relative = world - camera.Position;
+            Vector2 scaled = relative * camera.Zoom;
 
             float x = scaled.X + ScreenSize.X * 0.5f;
             float y = scaled.Y + ScreenSize.Y * 0.5f;
@@ -26,14 +26,14 @@ namespace Engine2D.Rendering.Camera
         }
 
 
-        public WorldVector ScreenToWorld(ScreenVector screen, Camera2D camera)
+        public Vector2 ScreenToWorld(ScreenVector screen, Camera2D camera)
         {
             // 1. Convert screen pixel to centered pixel space (still integer)
             ScreenVector halfScreen = ScreenSize / 2;
             ScreenVector centered = screen - halfScreen;
 
             // 2. Convert to float world units
-            WorldVector worldOffset = new WorldVector(
+            Vector2 worldOffset = new Vector2(
                 centered.X / camera.Zoom,
                 centered.Y / camera.Zoom);
 

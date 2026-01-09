@@ -8,8 +8,6 @@ namespace RenderLab
         public required PictureBoxRenderHost RenderHost;
         public required InputQueue Input;
         public required CameraPanZoomHandler CameraInput;
+        public required AnchorPlacementHandler AnchorHandler;
     }
-
-
-
 }

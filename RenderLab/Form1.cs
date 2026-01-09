@@ -10,9 +10,14 @@ using Engine2D.Rendering.Pipeline;
 using Engine2D.Rendering.Stages;
 using Engine2D.Tiles.Abstractions;
 using Engine2D.Tiles.Caching;
+using Engine2D.Tiles.Models;
+using Engine2D.Tiles.Providers;
 using Engine2D.Tiles.Rendering;
 using RenderLab.Targets.WinForms;
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Windows.Forms;
 
 namespace RenderLab
 {
@@ -28,18 +33,40 @@ namespace RenderLab
         private readonly string TileUrlTemplate = "https://storage-cdn.wemod.com/maps/b1c977d8-59dc-4ff7-b0f0-63488f7bfcd6/tiles/{z}/{y}/{x}.webp";
         private readonly string TileCacheFolder = "TileCache/fallout4";
 
+
+        private readonly MemoryManager _memoryManager = new();
+
+        private readonly PlayerPrimitive _playerPrimitive = new(new Vector2(0, 0));
+        private readonly LinearRegression _linearRegression = new();
+
+        System.Numerics.Vector2 gamePosition = System.Numerics.Vector2.Zero;
+
+
+
         public Form1()
         {
             InitializeComponent();
         }
 
+        IEnumerable<IPrimitive2D> GetAllPrimitives()
+        {
+            yield return _playerPrimitive;
+            foreach (var anchor in _linearRegression.GetPoints())
+                yield return CreateAnchorPrimitive(anchor);
+        }
+
+        AnchorPrimitive CreateAnchorPrimitive(Anchor anchor)
+        {
+            var calculatedMapPos = _linearRegression.HasModel
+                ? _linearRegression.GameToMap(anchor.Game)
+                : anchor.Map;
+
+            return new AnchorPrimitive(anchor.Map, calculatedMapPos);
+        }
+
+
         private void Form1_Load(object sender, EventArgs e)
         {
-            // -----------------------
-            // World data
-            // -----------------------
-            var primitives = new List<IPrimitive2D> ();
-
             // -----------------------
             // Tile system
             // -----------------------
@@ -47,7 +74,7 @@ namespace RenderLab
             {
                 TilePixelSize = 256,
                 Level0WorldSize = 256f,
-                Origin = new WorldVector(0, 0)
+                Origin = new Vector2(0, 0)
             };
             var tileScaler = new WinFormsTileImageScaler();
             var tileResampler = new WinFormsTileResampler(tileScaler);
@@ -65,7 +92,7 @@ namespace RenderLab
             var pipeline = new RenderPipeline2D();
             pipeline.AddStage(new ClearStage(ColorRgba.Black));
             pipeline.AddStage(new TileRenderStage(memoryTileCache, tileSpec));
-            pipeline.AddStage(new PrimitiveRenderStage(() => primitives));
+            pipeline.AddStage(new PrimitiveRenderStage(GetAllPrimitives));
             pipeline.AddStage(new HudRenderStage(DrawHud));
 
             // -----------------------
@@ -79,28 +106,57 @@ namespace RenderLab
             // Drive frames
             // -----------------------
             _gameLoop.RenderAsyncCallback = Render;
+            _gameLoop.UpdateAsyncCallback = Update;
             _ = _gameLoop.Start();
         }
+
+        private async Task Update(GameLoopContext context)
+        {
+            if (!_memoryManager.IsAttached)
+            {
+                if (!_memoryManager.Attach("Fallout4"))
+                    return;
+            }
+
+            IntPtr moduleBase = _memoryManager.GetProcessBase();
+
+            if (moduleBase == IntPtr.Zero)
+                return;
+
+            float xGame = _memoryManager.ReadFloat(moduleBase + 0x32DBF4C);
+            float yGame = _memoryManager.ReadFloat(moduleBase + 0x32DBF50);
+
+            gamePosition = new System.Numerics.Vector2(xGame, yGame);
+
+            if (_linearRegression.HasModel)
+            {
+                var mapPos = _linearRegression.GameToMap(gamePosition);
+                _playerPrimitive.Position = mapPos;
+            }
+        }
+
 
         private async Task Render(GameLoopContext context)
         {
             foreach (var vp in _viewports)
             {
                 vp.CameraInput.HandleInput(vp.Input);
+                vp.AnchorHandler.HandleInput(vp.Input);
                 vp.Input.Clear();
                 vp.RenderHost.RequestRedraw();
+
             }
         }
 
         private void DrawHud(HudDrawer hud)
         {
             int yPos = 0;
-            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"FPS:    {_gameLoop.AverageFrameRate}");
-            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"Zoom:   {hud.Context.Camera.Zoom}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"FPS:      {_gameLoop.AverageFrameRate}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(100, 20), $"Zoom:     {hud.Context.Camera.Zoom}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(200, 20), $"Attached: {_memoryManager.IsAttached}");
+            hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(200, 20), $"Position: X={gamePosition.X:F2} Y={gamePosition.Y:F2}");
         }
-         
-
-
+        
         ViewportHost CreateViewPortHost(PictureBox pictureBox, RenderPipeline2D pipeLine)
         {
             var camera = new Camera2D();
@@ -108,21 +164,27 @@ namespace RenderLab
             var renderHost = new PictureBoxRenderHost(pictureBox, pipeLine, camera);
             var inputSource = new WinFormsInputSource(pictureBox, input);
             var cameraInput = new CameraPanZoomHandler(camera, renderHost.Viewport, 1, 128);
+            var anchorHandler = new AnchorPlacementHandler(screenPosition =>
+            {
+                var mapPosition = renderHost.Viewport.ScreenToWorld(screenPosition, camera);
+
+                var anchor = new Anchor
+                {
+                    Game = gamePosition,
+                    Map = mapPosition,
+                };
+
+                _linearRegression.AddPoint(anchor);
+            });
 
             return new ViewportHost
             {
                 RenderHost = renderHost,
                 Input = input,
-                CameraInput = cameraInput
+                CameraInput = cameraInput,
+                AnchorHandler = anchorHandler,
             };
         }
-    }
-
-    class ViewportHost
-    {
-        public required PictureBoxRenderHost RenderHost;
-        public required InputQueue Input;
-        public required CameraPanZoomHandler CameraInput;
     }
 }
 

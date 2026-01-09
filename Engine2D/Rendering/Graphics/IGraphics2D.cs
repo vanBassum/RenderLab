@@ -12,6 +12,7 @@ namespace Engine2D.Rendering.Graphics
     {
         void Clear(ColorRgba color);
         void DrawLine(ScreenVector a, ScreenVector b, ColorRgba color, float thickness = 1.0f);
+        void DrawCircle(ScreenVector center, float radius, ColorRgba color, float thickness = 1.0f);
         void DrawText(ScreenVector position, string text, ColorRgba color);
         void DrawImage(ITileImage image, ScreenVector topLeft);
         void FillRect(ScreenVector position, ScreenVector size, ColorRgba color);
