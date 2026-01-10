@@ -46,6 +46,7 @@ namespace RenderLab
         Vector2 gamePosition = Vector2.Zero;
 
         private List<Vector2> _playerWaypoints = new();
+        private WaypointLog? _waypointLog;
 
 
 
@@ -57,15 +58,12 @@ namespace RenderLab
         IEnumerable<IPrimitive2D> GetAllPrimitives()
         {
             yield return _playerPrimitive;
-            foreach (var anchor in _linearRegression.GetPoints())
-                yield return CreateAnchorPrimitive(anchor);
 
-            for (int i = 1; i < _playerWaypoints.Count; i++)
-            {
-                var start = _linearRegression.GameToMap(_playerWaypoints[i - 1]);
-                var end = _linearRegression.GameToMap(_playerWaypoints[i]);
-                yield return CreateWaypointLine(start, end);
-            }
+            foreach (var anchor in CreateAnchorPrimitives())
+                yield return anchor;
+
+            foreach (var waypointPrimitive in CreateWaypointPrimitives())
+                yield return waypointPrimitive;
         }
 
         IEnumerable<ViewportHost> GetAllViewPorts()
@@ -74,18 +72,43 @@ namespace RenderLab
                 yield return _mainViewport;
         }
 
-        AnchorPrimitive CreateAnchorPrimitive(Anchor anchor)
+
+
+        IEnumerable<IPrimitive2D> CreateAnchorPrimitives()
         {
-            var calculatedMapPos = _linearRegression.HasModel
+            foreach (var anchor in _linearRegression.GetPoints())
+            {
+                var calculatedMapPos = _linearRegression.HasModel
                 ? _linearRegression.GameToMap(anchor.Game)
                 : anchor.Map;
 
-            return new AnchorPrimitive(anchor.Map, calculatedMapPos);
+                yield return new AnchorPrimitive(anchor.Map, calculatedMapPos);
+            }
         }
 
-        Line2D CreateWaypointLine(Vector2 start, Vector2 end)
+        IEnumerable<IPrimitive2D> CreateWaypointPrimitives()
         {
-            return new Line2D(start, end);
+            if (_playerWaypoints == null || _playerWaypoints.Count == 0)
+                yield break;
+
+            int index = 0;
+            var prev = _playerWaypoints[0];
+            var color = ColorGenerator.FromIndex(index);
+
+            foreach (var waypoint in _playerWaypoints)
+            {
+                var distance = Vector2.Distance(prev, waypoint);
+                if (distance > 500f)
+                {
+                    index++;
+                    color = ColorGenerator.FromIndex(index);
+                }
+
+                var mapPos = _linearRegression.GameToMap(waypoint);
+                yield return new WaypointDot(mapPos, color);
+
+                prev = waypoint;
+            }
         }
 
 
@@ -134,7 +157,9 @@ namespace RenderLab
 
 
             LoadRegressionData();
-            LoadWaypoints();
+
+            _playerWaypoints = WaypointLog.LoadAll(WaypointsDataFile);
+            _waypointLog = new WaypointLog(WaypointsDataFile);
         }
 
         private static readonly JsonSerializerOptions RegressionJsonOptions =
@@ -155,7 +180,7 @@ namespace RenderLab
             var anchors = JsonSerializer.Deserialize<List<Anchor>>(json, RegressionJsonOptions);
             if (anchors == null)
                 return;
-            
+
             _linearRegression.ClearPoints();
             foreach (var anchor in anchors)
             {
@@ -173,27 +198,6 @@ namespace RenderLab
             Directory.CreateDirectory(directory);
             File.WriteAllText(RegressionDataFile, json);
         }
-
-        void LoadWaypoints()
-        {
-            if (!File.Exists(WaypointsDataFile))
-                return;
-            var json = File.ReadAllText(WaypointsDataFile);
-            var waypoints = JsonSerializer.Deserialize<List<Vector2>>(json, RegressionJsonOptions);
-            if (waypoints == null)
-                return;
-            _playerWaypoints = waypoints;
-        }
-
-        void SaveWaypoints()
-        {
-            var json = JsonSerializer.Serialize(_playerWaypoints, RegressionJsonOptions);
-            var directory = Path.GetDirectoryName(WaypointsDataFile);
-            if (string.IsNullOrEmpty(directory))
-                return;
-            Directory.CreateDirectory(directory);
-            File.WriteAllText(WaypointsDataFile, json);
-        }   
 
 
         private async Task Update(GameLoopContext context)
@@ -214,11 +218,10 @@ namespace RenderLab
 
             gamePosition = new System.Numerics.Vector2(xGame, yGame);
 
-            if(_playerWaypoints.Count == 0)
+            if (_playerWaypoints.Count == 0)
             {
-                // No waypoints, just use current position
                 _playerWaypoints.Add(gamePosition);
-                SaveWaypoints();
+                _waypointLog?.Append(gamePosition);
             }
             else
             {
@@ -226,9 +229,10 @@ namespace RenderLab
                 if (distance >= 100f)
                 {
                     _playerWaypoints.Add(gamePosition);
-                    SaveWaypoints();
+                    _waypointLog?.Append(gamePosition);
                 }
             }
+
 
             if (_linearRegression.HasModel)
             {
@@ -260,7 +264,7 @@ namespace RenderLab
             hud.DrawLabel(new ScreenVector(10, yPos += 25), new ScreenVector(200, 20), $"Waypoints {_playerWaypoints.Count}");
 
         }
-        
+
         ViewportHost CreateViewPortHost(PictureBox pictureBox, RenderPipeline2D pipeLine)
         {
             var camera = new Camera2D();
@@ -290,7 +294,111 @@ namespace RenderLab
                 AnchorHandler = anchorHandler,
             };
         }
+
+
+        public sealed class WaypointDot : IPrimitive2D
+        {
+            public Vector2 Position { get; }
+            public ColorRgba Color { get; set; } = ColorRgba.Lime;
+            public WaypointDot(Vector2 position, ColorRgba color)
+            {
+                Position = position;
+                Color = color;
+            }
+            public void Render(RenderContext2D context)
+            {
+                var p = context.Viewport.WorldToScreen(Position, context.Camera);
+                context.Graphics.DrawCircle(p, 1f, Color, 1f);
+            }
+        }
+
+
+        public sealed class WaypointLog : IDisposable
+        {
+            private readonly FileStream _stream;
+            private readonly StreamWriter _writer;
+
+            private static readonly JsonSerializerOptions JsonOptions = new()
+            {
+                WriteIndented = false
+            };
+
+            public WaypointLog(string path)
+            {
+                var dir = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
+
+                // ShareRead allows your loader or tools to read while you keep it open.
+                _stream = new FileStream(
+                    path,
+                    FileMode.Append,
+                    FileAccess.Write,
+                    FileShare.Read,
+                    bufferSize: 16 * 1024,
+                    options: FileOptions.SequentialScan);
+
+                _writer = new StreamWriter(_stream, System.Text.Encoding.UTF8)
+                {
+                    AutoFlush = false
+                };
+            }
+
+            public void Append(Vector2 pos)
+            {
+                var item = new WaypointLogItem(
+                    t: DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    x: pos.X,
+                    y: pos.Y);
+
+                string json = JsonSerializer.Serialize(item, JsonOptions);
+                _writer.WriteLine(json);
+
+                // Choose your durability/perf tradeoff:
+                _writer.Flush();         // flush StreamWriter buffer -> FileStream
+                _stream.Flush(true);     // flush OS buffers to disk (more expensive)
+            }
+
+            public static List<Vector2> LoadAll(string path)
+            {
+                var list = new List<Vector2>();
+                if (!File.Exists(path))
+                    return list;
+
+                foreach (var line in File.ReadLines(path))
+                {
+                    if (string.IsNullOrWhiteSpace(line))
+                        continue;
+
+                    try
+                    {
+                        var item = JsonSerializer.Deserialize<WaypointLogItem>(line, JsonOptions);
+                        list.Add(new Vector2(item.x, item.y));
+                    }
+                    catch
+                    {
+                        // Ignore malformed/truncated lines; optionally log it.
+                    }
+                }
+
+                return list;
+            }
+
+            public void Dispose()
+            {
+                _writer.Dispose();
+                _stream.Dispose();
+            }
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            _waypointLog?.Dispose();
+            base.OnFormClosed(e);
+        }
     }
+
+    record WaypointLogItem(long t, float x, float y);
 }
 
 

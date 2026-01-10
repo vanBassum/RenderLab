@@ -24,4 +24,7 @@ namespace Engine2D.Primitives.Geometry
             context.Graphics.DrawLine(a, b, ColorRgba.Lime, 1f);
         }
     }
+
 }
+
+

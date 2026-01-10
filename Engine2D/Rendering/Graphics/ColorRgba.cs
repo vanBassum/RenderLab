@@ -25,4 +25,5 @@ namespace Engine2D.Rendering.Graphics
         public static readonly ColorRgba DarkPink = new(128, 32, 64);
 
     }
+
 }
