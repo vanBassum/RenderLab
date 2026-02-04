@@ -10,18 +10,20 @@ namespace Engine2D.Primitives.Geometry
     {
         public Vector2 Start { get; }
         public Vector2 End { get; }
+        public ColorRgba Color { get; set; } = ColorRgba.Red;
 
-        public Line2D(Vector2 start, Vector2 end)
+        public Line2D(Vector2 start, Vector2 end, ColorRgba color)
         {
             Start = start;
             End = end;
+            Color = color;
         }
 
         public void Render(RenderContext2D context)
         {
             var a = context.Viewport.WorldToScreen(Start, context.Camera);
             var b = context.Viewport.WorldToScreen(End, context.Camera);
-            context.Graphics.DrawLine(a, b, ColorRgba.Lime, 1f);
+            context.Graphics.DrawLine(a, b, Color, 1f);
         }
     }
 

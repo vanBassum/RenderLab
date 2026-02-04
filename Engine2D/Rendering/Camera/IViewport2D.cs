@@ -5,9 +5,12 @@ namespace Engine2D.Rendering.Camera
 {
     public interface IViewport2D
     {
-       ScreenVector ScreenSize { get; }
+        ScreenVector ScreenSize { get; }
         ScreenVector WorldToScreen(Vector2 world, Camera2D camera);
         Vector2 ScreenToWorld(ScreenVector screen, Camera2D camera);
+
+        float WorldToScreenLength(float worldLength, Camera2D camera) => worldLength * camera.Zoom;
+        float ScreenToWorldLength(float screenLength, Camera2D camera) => screenLength / camera.Zoom;
 
         public Vector2 GetWorldMin(Camera2D camera)
         {
